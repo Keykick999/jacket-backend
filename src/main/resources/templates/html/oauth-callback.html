@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인 처리 중...</title>
+</head>
+<body>
+<p>로그인 처리 중입니다. 잠시만 기다려주세요...</p>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+
+    // 1. Model에서 accessToken 가져오기
+    var accessToken = /*[[${accessToken}]]*/ null;
+
+    if (accessToken) {
+        // 2. localStorage에 토큰 저장
+        localStorage.setItem('token', accessToken);
+
+        // 3. 메인 페이지로 리다이렉트
+        window.location.href = '/main'; // (성공 시 이동할 메인 페이지)
+
+    } else {
+        // 토큰이 없는 경우 (비정상 접근 또는 실패)
+        alert('로그인에 실패하였습니다. 다시 시도해주세요.');
+        window.location.href = '/'; // (로그인 페이지로)
+    }
+
+    /*]]>*/
+</script>
+</body>
+</html>

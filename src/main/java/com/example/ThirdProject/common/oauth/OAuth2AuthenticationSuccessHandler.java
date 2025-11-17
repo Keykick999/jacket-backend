@@ -1,0 +1,65 @@
+package com.example.ThirdProject.common.oauth;
+
+import com.example.ThirdProject.common.jwt.JwtService;
+import com.example.ThirdProject.user.entity.User;
+import com.example.ThirdProject.user.repository.UserProviderRepository;
+import com.example.ThirdProject.user.repository.UserRepository;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
+@Component
+@RequiredArgsConstructor
+public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final UserProviderRepository userProviderRepository;
+
+    private final String FRONTEND_CALLBACK_URL = "http://localhost:8080/oauth/callback";
+
+    @Override
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+        // 1. Principal에서 Provider ID (Social ID)와 Provider 이름(kakao, naver)을 추출합니다.
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
+
+        String providerName = authToken.getAuthorizedClientRegistrationId(); // 'kakao', 'naver' 등
+
+        OAuthAttributes attributes = OAuthAttributes.of(
+                providerName,
+                oAuth2User.getName(), // Spring Security가 Principal Name으로 설정한 값 (e.g., Kakao's 'id')
+                oAuth2User.getAttributes()
+        );
+
+        // 2. 획득한 Provider ID와 Provider 이름을 사용합니다.
+        String providerId = attributes.getProviderId();
+
+        // UserProvider 테이블을 조회하여 User 엔티티를 획득합니다.
+        User user = userProviderRepository
+                .findByProviderAndProviderId(providerName, providerId)
+                .map(userProvider -> userProvider.getUser()) // 연동 기록에서 User FK를 가져옵니다.
+                .orElseThrow(() -> new IllegalStateException("FATAL: User link not found after successful authentication."));
+
+        // JWT 토큰 생성 및 발행
+        String accessToken = jwtService.generateAccessToken(user.getId());
+
+        // 프론트엔드로 리다이렉트
+        String targetUrl = UriComponentsBuilder.fromUriString(FRONTEND_CALLBACK_URL)
+                .queryParam("accessToken", accessToken)
+                .build()
+                .encode(StandardCharsets.UTF_8)
+                .toUriString();
+
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+    }
+}

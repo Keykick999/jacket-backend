@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carmmunity 로그인</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&display=swap');
+
+        body {
+            background-color: #fafafa;
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .auth-box {
+            background-color: #fff;
+            border: 1px solid #dbdbdb;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo img {
+            height: 40px;
+        }
+
+        .form-floating {
+            margin-bottom: 1rem;
+        }
+
+        .btn-login {
+            width: 100%;
+            background-color: #0095f6;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .btn-login:hover {
+            background-color: #0077cc;
+        }
+
+        .auth-links {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .auth-links a {
+            color: #0095f6;
+            text-decoration: none;
+        }
+
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .gsi-material-button {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            -webkit-appearance: none;
+            background-color: WHITE;
+            background-image: none;
+            border: 1px solid #dbdbdb;
+            -webkit-border-radius: 4px;
+            border-radius: 4px;
+            -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+            color: #1f1f1f;
+            cursor: pointer;
+            font-family: 'Roboto', arial, sans-serif;
+            font-size: 14px;
+            height: 40px;
+            letter-spacing: 0.25px;
+            outline: none;
+            overflow: hidden;
+            padding: 0 12px;
+            position: relative;
+            text-align: center;
+            -webkit-transition: background-color .218s, border-color .218s, box-shadow .218s;
+            transition: background-color .218s, border-color .218s, box-shadow .218s;
+            vertical-align: middle;
+            white-space: nowrap;
+            width: 100%; /* [⭐ 수정] 부모 요소에 맞게 100%로 변경 */
+            max-width: 400px;
+            min-width: min-content;
+            text-decoration: none; /* [⭐ 추가] <a> 태그 밑줄 제거 */
+        }
+
+        .gsi-material-button .gsi-material-button-icon {
+            height: 20px;
+            margin-right: 12px;
+            min-width: 20px;
+            width: 20px;
+        }
+
+        .gsi-material-button .gsi-material-button-content-wrapper {
+            -webkit-align-items: center;
+            align-items: center;
+            display: flex;
+            -webkit-flex-direction: row;
+            flex-direction: row;
+            -webkit-flex-wrap: nowrap;
+            flex-wrap: nowrap;
+            height: 100%;
+            justify-content: center; /* [⭐ 수정] 아이콘/텍스트 중앙 정렬 */
+            position: relative;
+            width: 100%;
+        }
+
+        .gsi-material-button .gsi-material-button-contents {
+            -webkit-flex-grow: 0; /* [⭐ 수정] 중앙 정렬을 위해 0으로 변경 */
+            flex-grow: 0;
+            font-family: 'Roboto', arial, sans-serif;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: top;
+            color: #3C4043; /* [⭐ 추가] 텍스트 색상 명시 */
+        }
+
+        .gsi-material-button .gsi-material-button-state {
+            -webkit-transition: opacity .218s;
+            transition: opacity .218s;
+            bottom: 0;
+            left: 0;
+            opacity: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+
+        .gsi-material-button:disabled {
+            cursor: default;
+            background-color: #ffffff61;
+            border-color: #1f1f1f1f;
+        }
+
+        .gsi-material-button:disabled .gsi-material-button-contents {
+            opacity: 38%;
+        }
+
+        .gsi-material-button:disabled .gsi-material-button-icon {
+            opacity: 38%;
+        }
+
+        .gsi-material-button:not(:disabled):active .gsi-material-button-state,
+        .gsi-material-button:not(:disabled):focus .gsi-material-button-state {
+            background-color: #303030;
+            opacity: 12%;
+        }
+
+        .gsi-material-button:not(:disabled):hover {
+            -webkit-box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .30), 0 1px 3px 1px rgba(60, 64, 67, .15);
+            box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .30), 0 1px 3px 1px rgba(60, 64, 67, .15);
+        }
+
+        .gsi-material-button:not(:disabled):hover .gsi-material-button-state {
+            background-color: #303030;
+            opacity: 8%;
+        }
+        /* Naver/Kakao 버튼 호버 효과 */
+        .auth-box .d-grid a.btn {
+            transition: opacity 0.2s ease;
+        }
+        .auth-box .d-grid a.btn:hover {
+            opacity: 0.9; /* 마우스를 올리면 살짝 투명해집니다 */
+        }
+    </style>
+</head>
+<body>
+<div class="auth-box">
+    <div class="logo">
+        Logo
+    </div>
+
+    <div class="form-floating">
+        <input type="text" class="form-control" id="userIdInput" placeholder="아이디">
+        <label for="userIdInput">아이디</label>
+        <div id="userIdError" class="error-message"></div>
+    </div>
+
+    <div class="form-floating">
+        <input type="password" class="form-control" id="passwordInput" placeholder="비밀번호">
+        <label for="passwordInput">비밀번호</label>
+        <div id="passwordError" class="error-message"></div>
+    </div>
+
+    <button class="btn-login" id="loginBtn">로그인</button>
+
+    <div class="d-flex align-items-center my-3">
+        <hr class="flex-grow-1">
+        <span class="px-3 text-muted" style="font-size: 0.9rem;">OR</span>
+        <hr class="flex-grow-1">
+    </div>
+
+    <div class="d-grid gap-2">
+        <a href="/oauth2/authorization/google" class="gsi-material-button" role="button">
+            <div class="gsi-material-button-state"></div>
+            <div class="gsi-material-button-content-wrapper">
+                <div class="gsi-material-button-icon">
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xmlns:xlink="http://www.w3.org/1999/xlink" style="display: block;">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                        <path fill="none" d="M0 0h48v48H0z"></path>
+                    </svg>
+                </div>
+                <span class="gsi-material-button-contents">Google로 로그인</span>
+                <span style="display: none;">Google로 로그인</span>
+            </div>
+        </a>
+
+        <a href="/oauth2/authorization/naver" class="btn btn-light border" role="button" style="display: flex; align-items: center; justify-content: center; background-color: #03C75A; color: white; border-color: #03C75A; height: 40px; text-decoration: none; font-weight: 500;">
+            <img src="/image/naver_login_icon.png" alt="Naver" style="height: 20px; margin-right: 8px;">
+            <span>Naver로 로그인</span>
+        </a>
+
+        <a href="/oauth2/authorization/kakao" class="btn btn-light border" role="button"
+           style="display: flex; align-items: center; justify-content: center; background-color: #FEE500; color: #3C1E1E; border-color: #FEE500; height: 40px;">
+
+            <img src="/image/kakao_login_icon.png" alt="Kakao" style="height: 40px; margin-right: 10px;">
+        </a>
+    </div>
+
+    <div class="auth-links">
+        <div><a href="/signUp">회원가입</a></div>
+        <div><a href="/id-find">아이디 찾기</a> | <a href="/pw-find">비밀번호 초기화</a></div>
+    </div>
+
+    <div id="resultMessage" class="error-message mt-3"></div>
+</div>
+<script src="/js/login.js"></script>
+</body>
+</html>
