@@ -17,9 +17,9 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
-    private final String FRONTEND_ERROR_CALLBACK_URL = "http://localhost:8080/oauth/error";
-    private final String ADDITIONAL_SIGNUP_URL = "http://localhost:8080/signUp/additional-info";
-    private final String LINK_CONFIRM_URL = "http://localhost:8080/link-confirm"; // 💡 [신규] 연동 확인 페이지
+    private final String FRONTEND_ERROR_CALLBACK_URL = "http://localhost:5173/oauth/error";
+    private final String ADDITIONAL_SIGNUP_URL = "http://localhost:5173/signup/additional";
+    private final String LINK_CONFIRM_URL = "http://localhost:5173/link-confirm"; // 💡 [신규] 연동 확인 페이지
 
     // 🚩 [핵심 헬퍼] 예외 체인을 탐색하여 원하는 커스텀 예외 객체를 찾아 반환합니다.
     private <T extends AuthenticationException> T getRequiredException(Throwable t, Class<T> targetClass) {

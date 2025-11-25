@@ -16,8 +16,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-
+import org.springframework.web.cors.CorsConfiguration;
+import java.util.Collections;
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -25,48 +26,50 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    // 3개의 OAuth2 관련 컴포넌트 주입
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
 
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
+                .cors(cors -> cors.configurationSource(request -> {
+                    CorsConfiguration config = new CorsConfiguration();
+                    config.setAllowedOrigins(Collections.singletonList("http://localhost:5173"));
+                    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(Collections.singletonList("*"));
+                    config.setAllowCredentials(true);
+                    return config;
+                }))
                 .csrf(csrf -> csrf.disable())
-
-                // [필수] 세션 STATELESS 설정 (이미 되어있음)
                 .sessionManagement(sessionManagement ->
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
                 .authorizeHttpRequests(auth -> auth
-                        // [수정] OAuth2 콜백 엔드포인트는 인증 없이 허용해야 함
                         .requestMatchers(
-                                "/", "/users", "/users/login", "/email/**", "/carTest", "/**", "/edit-post", // 기존 URL
-                                "/login/oauth2/code/**", // OAuth2 콜백
-                                "/oauth2/**" // (혹시 모를) OAuth2 관련 경로
+                                "/",
+                                "/users/login",
+                                "/users/social-complete", // Explicitly allow this
+                                "/api/users/social-complete", // Also allow with /api prefix just in case
+                                "/api/users/**", // Allow all /api/users for now to be safe
+                                "/api/email/**",
+                                "/email/**",
+                                "/login/oauth2/code/**",
+                                "/oauth2/**",
+                                "/error",
+                                "/favicon.ico",
+                                "/uploads/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-
-                // OAuth2 로그인 설정
                 .oauth2Login(oauth2 -> oauth2
-                        // 1. 로그인 성공 시 사용할 핸들러
                         .successHandler(oAuth2AuthenticationSuccessHandler)
-                        // 2. 로그인 실패 시 사용할 핸들러
                         .failureHandler(oAuth2AuthenticationFailureHandler)
-                        // 3. (핵심) OAuth2 유저 정보를 처리할 커스텀 서비스 등록
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)
                         )
                 )
-
-                // JWT 필터 추가 (이미 되어있음)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-
                 .build();
     }
 

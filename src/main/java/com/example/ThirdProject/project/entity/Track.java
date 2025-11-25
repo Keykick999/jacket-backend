@@ -1,0 +1,72 @@
+package com.example.ThirdProject.project.entity;
+
+import com.example.ThirdProject.project.enums.TrackType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@Table(name = "tracks")
+public class Track {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    @JsonIgnore
+    private Project project;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    private TrackType type; // AUDIO, MIDI, etc.
+
+    private String color;
+
+    private double volume = 0.0; // dB
+
+    private double pan = 0.0;
+
+    private boolean isMuted = false;
+
+    private boolean isSolo = false;
+
+    private int orderIndex;
+
+    @OneToMany(mappedBy = "track", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Plugin> plugins = new ArrayList<>();
+
+    @OneToMany(mappedBy = "track", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Clip> clips = new ArrayList<>();
+
+    public void addPlugin(Plugin plugin) {
+        plugins.add(plugin);
+        plugin.setTrack(this);
+    }
+
+    public void removePlugin(Plugin plugin) {
+        plugins.remove(plugin);
+        plugin.setTrack(null);
+    }
+
+    public void addClip(Clip clip) {
+        clips.add(clip);
+        clip.setTrack(this);
+    }
+
+    public void removeClip(Clip clip) {
+        clips.remove(clip);
+        clip.setTrack(null);
+    }
+}

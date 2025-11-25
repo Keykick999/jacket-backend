@@ -1,0 +1,221 @@
+package com.example.ThirdProject.project.service;
+
+import com.example.ThirdProject.common.exception.CustomException;
+import com.example.ThirdProject.common.exception.ErrorCode;
+import com.example.ThirdProject.project.dto.ClipDto;
+import com.example.ThirdProject.project.dto.PluginDto;
+import com.example.ThirdProject.project.dto.ProjectDto;
+import com.example.ThirdProject.project.dto.TrackDto;
+import com.example.ThirdProject.project.entity.*;
+import com.example.ThirdProject.project.repository.ProjectRepository;
+import com.example.ThirdProject.user.entity.User;
+import com.example.ThirdProject.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class ProjectService {
+
+    private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
+
+    public ProjectDto createProject(String userId, ProjectDto projectDto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        Project project = new Project();
+        project.setUser(user);
+        project.setName(projectDto.getName());
+        project.setBpm(projectDto.getBpm());
+        project.setTimeSignature(projectDto.getTimeSignature());
+
+        // Map Tracks and Plugins
+        if (projectDto.getTracks() != null) {
+            for (TrackDto trackDto : projectDto.getTracks()) {
+                project.addTrack(mapToEntity(trackDto, project));
+            }
+        }
+
+        Project savedProject = projectRepository.save(project);
+        return mapToDto(savedProject);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectDto> getProjectsByUserId(String userId) {
+        return projectRepository.findByUserId(userId).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectDto getProject(Long projectId, String userId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
+
+        if (!project.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        return mapToDto(project);
+    }
+
+    public ProjectDto updateProject(Long projectId, String userId, ProjectDto projectDto) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
+
+        if (!project.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        project.setName(projectDto.getName());
+        project.setBpm(projectDto.getBpm());
+        project.setTimeSignature(projectDto.getTimeSignature());
+
+        // Simple update strategy: Clear existing tracks and re-add
+        project.getTracks().clear();
+
+        if (projectDto.getTracks() != null) {
+            for (TrackDto trackDto : projectDto.getTracks()) {
+                project.addTrack(mapToEntity(trackDto, project));
+            }
+        }
+
+        return mapToDto(projectRepository.save(project));
+    }
+
+    public void deleteProject(Long projectId, String userId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
+
+        if (!project.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        projectRepository.deleteById(projectId);
+    }
+
+    private Track mapToEntity(TrackDto dto, Project project) {
+        Track track = new Track();
+        track.setProject(project);
+        track.setName(dto.getName());
+        track.setType(dto.getType());
+        track.setColor(dto.getColor());
+        track.setVolume(dto.getVolume());
+        track.setPan(dto.getPan());
+        track.setMuted(dto.getIsMuted());
+        track.setSolo(dto.getIsSolo());
+        track.setOrderIndex(dto.getOrderIndex());
+
+        if (dto.getPlugins() != null) {
+            for (PluginDto pluginDto : dto.getPlugins()) {
+                Plugin plugin = new Plugin();
+                plugin.setName(pluginDto.getName());
+                plugin.setType(pluginDto.getType());
+                plugin.setOrderIndex(pluginDto.getOrderIndex());
+
+                if (pluginDto.getParameters() != null) {
+                    for (Map.Entry<String, String> entry : pluginDto.getParameters().entrySet()) {
+                        PluginParameter param = new PluginParameter();
+                        param.setName(entry.getKey());
+                        param.setValue(entry.getValue());
+                        plugin.addParameter(param);
+                    }
+                }
+
+                track.addPlugin(plugin);
+            }
+        }
+
+        if (dto.getClips() != null) {
+            for (ClipDto clipDto : dto.getClips()) {
+                Clip clip = new Clip();
+                clip.setName(clipDto.getName());
+                clip.setStartTime(clipDto.getStartTime());
+                clip.setDuration(clipDto.getDuration());
+                clip.setOffset(clipDto.getOffset());
+                clip.setSourceUrl(clipDto.getSourceUrl());
+                clip.setVolume(clipDto.getVolume());
+                clip.setPan(clipDto.getPan());
+                clip.setMuted(clipDto.isMuted());
+
+                track.addClip(clip);
+            }
+        }
+
+        return track;
+    }
+
+    private ProjectDto mapToDto(Project project) {
+        ProjectDto dto = new ProjectDto();
+        dto.setId(project.getId());
+        dto.setName(project.getName());
+        dto.setBpm(project.getBpm());
+        dto.setTimeSignature(project.getTimeSignature());
+        dto.setCreatedAt(project.getCreatedAt());
+        dto.setUpdatedAt(project.getUpdatedAt());
+
+        List<TrackDto> trackDtos = project.getTracks().stream()
+                .sorted(Comparator.comparingInt(Track::getOrderIndex))
+                .map(track -> {
+                    TrackDto trackDto = new TrackDto();
+                    trackDto.setId(track.getId());
+                    trackDto.setName(track.getName());
+                    trackDto.setType(track.getType());
+                    trackDto.setColor(track.getColor());
+                    trackDto.setVolume((float) track.getVolume());
+                    trackDto.setPan((float) track.getPan());
+                    trackDto.setIsMuted(track.isMuted());
+                    trackDto.setIsSolo(track.isSolo());
+                    trackDto.setOrderIndex(track.getOrderIndex());
+
+                    List<PluginDto> pluginDtos = track.getPlugins().stream()
+                            .sorted(Comparator.comparingInt(Plugin::getOrderIndex))
+                            .map(plugin -> {
+                                PluginDto pluginDto = new PluginDto();
+                                pluginDto.setId(plugin.getId());
+                                pluginDto.setName(plugin.getName());
+                                pluginDto.setType(plugin.getType());
+                                pluginDto.setOrderIndex(plugin.getOrderIndex());
+
+                                Map<String, String> params = plugin.getParameters().stream()
+                                        .collect(Collectors.toMap(PluginParameter::getName, PluginParameter::getValue));
+                                pluginDto.setParameters(params);
+
+                                return pluginDto;
+                            })
+                            .collect(Collectors.toList());
+                    trackDto.setPlugins(pluginDtos);
+
+                    List<ClipDto> clipDtos = track.getClips().stream()
+                            .map(clip -> {
+                                ClipDto clipDto = new ClipDto();
+                                clipDto.setId(clip.getId());
+                                clipDto.setName(clip.getName());
+                                clipDto.setStartTime(clip.getStartTime());
+                                clipDto.setDuration(clip.getDuration());
+                                clipDto.setOffset(clip.getOffset());
+                                clipDto.setSourceUrl(clip.getSourceUrl());
+                                clipDto.setVolume(clip.getVolume());
+                                clipDto.setPan(clip.getPan());
+                                clipDto.setMuted(clip.isMuted());
+                                return clipDto;
+                            })
+                            .collect(Collectors.toList());
+                    trackDto.setClips(clipDtos);
+
+                    return trackDto;
+                })
+                .collect(Collectors.toList());
+
+        dto.setTracks(trackDtos);
+        return dto;
+    }
+}

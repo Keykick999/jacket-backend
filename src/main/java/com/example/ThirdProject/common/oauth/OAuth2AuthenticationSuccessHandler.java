@@ -25,7 +25,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final UserRepository userRepository;
     private final UserProviderRepository userProviderRepository;
 
-    private final String FRONTEND_CALLBACK_URL = "http://localhost:8080/oauth/callback";
+//    private final String FRONTEND_CALLBACK_URL = "http://localhost:8080/oauth/callback";
+    private final String FRONTEND_CALLBACK_URL = "http://localhost:5173/oauth/callback";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {

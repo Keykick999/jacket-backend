@@ -1,6 +1,5 @@
 package com.example.ThirdProject.user.controller;
 
-import com.example.ThirdProject.common.exception.EmailAlreadyInUseException;
 import com.example.ThirdProject.user.dto.*;
 import com.example.ThirdProject.user.service.AuthService;
 import jakarta.validation.Valid;
