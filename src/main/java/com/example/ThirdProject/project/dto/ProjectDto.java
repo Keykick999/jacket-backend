@@ -12,5 +12,6 @@ public class ProjectDto {
     private String timeSignature;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long albumId;
     private List<TrackDto> tracks;
 }

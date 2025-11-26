@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class ProjectService {
+
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
 
@@ -167,6 +168,9 @@ public class ProjectService {
         dto.setTimeSignature(project.getTimeSignature());
         dto.setCreatedAt(project.getCreatedAt());
         dto.setUpdatedAt(project.getUpdatedAt());
+        if (project.getAlbum() != null) {
+            dto.setAlbumId(project.getAlbum().getId());
+        }
 
         List<TrackDto> trackDtos = project.getTracks().stream()
                 .sorted(Comparator.comparingInt(Track::getOrderIndex))
