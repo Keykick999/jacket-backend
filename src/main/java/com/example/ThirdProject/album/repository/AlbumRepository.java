@@ -1,0 +1,10 @@
+package com.example.ThirdProject.album.repository;
+
+import com.example.ThirdProject.album.entity.Album;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface AlbumRepository extends JpaRepository<Album, Long> {
+    List<Album> findByUserId(String userId);
+}

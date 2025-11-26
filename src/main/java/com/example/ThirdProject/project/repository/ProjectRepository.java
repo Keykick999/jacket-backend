@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByUserId(String userId);
+    List<Project> findByAlbumId(Long albumId);
 }

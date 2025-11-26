@@ -43,7 +43,7 @@ public class ProjectController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProject(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long id) {
         String userId = userDetails.getUsername();
-        projectService.deleteProject(id, userId);
+        projectService.deleteProject(userId, id);
         return ResponseEntity.noContent().build();
     }
 }

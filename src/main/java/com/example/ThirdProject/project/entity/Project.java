@@ -1,5 +1,6 @@
 package com.example.ThirdProject.project.entity;
 
+import com.example.ThirdProject.album.entity.Album;
 import com.example.ThirdProject.common.entity.BaseTimeEntity;
 import com.example.ThirdProject.user.entity.User;
 import jakarta.persistence.*;
@@ -16,7 +17,6 @@ import java.util.List;
 @NoArgsConstructor
 @Table(name = "projects")
 public class Project extends BaseTimeEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -24,6 +24,10 @@ public class Project extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "album_id")
+    private Album album;
 
     @Column(nullable = false)
     private String name;

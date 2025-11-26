@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class ProjectService {
-
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
 
@@ -91,7 +90,7 @@ public class ProjectService {
         return mapToDto(projectRepository.save(project));
     }
 
-    public void deleteProject(Long projectId, String userId) {
+    public void deleteProject(String userId, Long projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
 
@@ -99,7 +98,14 @@ public class ProjectService {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
-        projectRepository.deleteById(projectId);
+        projectRepository.delete(project);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectDto> getProjectsByAlbumId(Long albumId) {
+        return projectRepository.findByAlbumId(albumId).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
     }
 
     private Track mapToEntity(TrackDto dto, Project project) {
