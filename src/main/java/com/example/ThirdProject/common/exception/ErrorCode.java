@@ -15,6 +15,8 @@ public enum ErrorCode {
 
     // Auth Errors
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다."),
+
 
     // 이메일 에러
     EMAIL_DUPLICATE_FOR_LINKING(HttpStatus.CONFLICT, "입력하신 이메일은 이미 등록된 계정입니다. 연동을 진행해주세요."),
@@ -22,7 +24,8 @@ public enum ErrorCode {
 
     // 프로젝트 에러
     PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
-    ALBUM_NOT_FOUND(HttpStatus.NOT_FOUND, "앨범을 찾을 수 없습니다");
+    ALBUM_NOT_FOUND(HttpStatus.NOT_FOUND, "앨범을 찾을 수 없습니다"),
+    TRACK_NOT_FOUND(HttpStatus.NOT_FOUND, "트랙을 찾을 수 없습니다.");
 
 
 

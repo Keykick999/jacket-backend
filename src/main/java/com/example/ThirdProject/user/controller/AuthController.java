@@ -1,15 +1,16 @@
 package com.example.ThirdProject.user.controller;
 
+import com.example.ThirdProject.common.util.CookieUtil;
 import com.example.ThirdProject.user.dto.*;
 import com.example.ThirdProject.user.service.AuthService;
+import jakarta.servlet.http.Cookie;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 import java.util.Map;
@@ -21,6 +22,7 @@ public class AuthController {
 
     private final AuthService auth;
     private final AuthService authService;
+    private final CookieUtil cookieUtil;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Valid RegisterRequest req) {
@@ -29,13 +31,30 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginRequest req) {
-        return ResponseEntity.ok(auth.login(req));
+    public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest req) {
+        TokenResponse tokens = authService.login(req);
+        ResponseCookie accessCookie = cookieUtil.createAccessTokenCookie(tokens.accessToken());
+        ResponseCookie refreshCookie = cookieUtil.createRefreshTokenCookie(tokens.refreshToken());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .build();
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<TokenResponse> refresh(@RequestBody @Valid RefreshRequest req) {
-        return ResponseEntity.ok(auth.refresh(req));
+    public ResponseEntity<Void> refresh(
+            @CookieValue(value = "refresh-token", required = true) String refreshToken
+    ) {
+        TokenResponse tokens = authService.refresh(refreshToken);
+
+        ResponseCookie accessCookie = cookieUtil.createAccessTokenCookie(tokens.accessToken());
+        ResponseCookie refreshCookie = cookieUtil.createRefreshTokenCookie(tokens.refreshToken());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .build();
     }
 
     @PostMapping("/logout")
@@ -65,5 +84,16 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(response);
+    }
+
+    /**
+     * 프론트엔드 인증 확인용 API
+     * (헤더/쿠키의 토큰이 유효해야만 이 메서드에 도달함)
+     */
+    @GetMapping("/me")
+    public ResponseEntity<Void> checkAuth() {
+        // TODO: 나중에 회원 정보(ID, 이름, 프로필 등) 반환 로직 추가 필요.
+        // 지금은 프론트에서 로그인 여부 판단을 위해서만 설정해뒀음.
+        return ResponseEntity.ok().build();
     }
 }

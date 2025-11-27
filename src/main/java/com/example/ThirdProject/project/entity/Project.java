@@ -43,9 +43,4 @@ public class Project extends BaseTimeEntity {
         tracks.add(track);
         track.setProject(this);
     }
-
-    public void removeTrack(Track track) {
-        tracks.remove(track);
-        track.setProject(null);
-    }
 }

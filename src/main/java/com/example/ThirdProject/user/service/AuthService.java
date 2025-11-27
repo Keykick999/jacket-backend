@@ -64,10 +64,7 @@ public class AuthService {
     /**
      * 토큰 재발급
      */
-    public TokenResponse refresh(RefreshRequest req) {
-        String refresh = req.refreshToken();
-        validateRefreshToken(refresh);
-
+    public TokenResponse refresh(String refresh) {
         String username = jwtService.getUserId(refresh);
         if (!store.isRefreshValid(username, refresh)) {
             throw new InvalidRefreshTokenException();

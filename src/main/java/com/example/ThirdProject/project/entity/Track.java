@@ -15,6 +15,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @Table(name = "tracks")
+@org.hibernate.annotations.SQLRestriction("deleted = false")
 public class Track {
 
     @Id
@@ -43,6 +44,9 @@ public class Track {
     private boolean isSolo = false;
 
     private int orderIndex;
+
+    @Column(nullable = false)
+    private boolean deleted = false;
 
     @OneToMany(mappedBy = "track", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Plugin> plugins = new ArrayList<>();

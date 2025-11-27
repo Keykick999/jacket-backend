@@ -1,5 +1,6 @@
 package com.example.ThirdProject.common.security;
 
+import com.example.ThirdProject.common.jwt.JwtAuthenticationEntryPoint;
 import com.example.ThirdProject.common.jwt.JwtAuthenticationFilter;
 import com.example.ThirdProject.common.oauth.CustomOAuth2UserService;
 import com.example.ThirdProject.common.oauth.OAuth2AuthenticationFailureHandler;
@@ -29,6 +30,7 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -45,7 +47,7 @@ public class SecurityConfig {
                 .sessionManagement(sessionManagement ->
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(auth -> auth // TODO 나중에 필요한 경로만 설정하는 식으로 바꾸기
                         .requestMatchers(
                                 "/",
                                 "/users/login",
@@ -61,6 +63,9 @@ public class SecurityConfig {
                                 "/uploads/**"
                         ).permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2AuthenticationSuccessHandler)

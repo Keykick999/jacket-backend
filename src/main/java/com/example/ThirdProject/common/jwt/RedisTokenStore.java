@@ -20,7 +20,7 @@ public class RedisTokenStore implements TokenStore {
         redis.opsForValue().set(key(username, refreshToken), "1", Duration.ofMillis(ttlMs));
     }
     @Override public boolean isRefreshValid(String username, String refreshToken) {
-        return Boolean.TRUE.equals(redis.hasKey(key(username, refreshToken)));
+        return redis.hasKey(key(username, refreshToken));
     }
     @Override public void revokeRefresh(String username, String refreshToken) {
         redis.delete(key(username, refreshToken));

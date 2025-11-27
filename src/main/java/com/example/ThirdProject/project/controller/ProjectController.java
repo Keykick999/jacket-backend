@@ -7,7 +7,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -44,6 +43,13 @@ public class ProjectController {
     public ResponseEntity<Void> deleteProject(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long id) {
         String userId = userDetails.getUsername();
         projectService.deleteProject(userId, id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{projectId}/tracks/{trackId}")
+    public ResponseEntity<Void> deleteTrack(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long projectId, @PathVariable Long trackId) {
+        String userId = userDetails.getUsername();
+        projectService.deleteTrack(projectId, trackId, userId);
         return ResponseEntity.noContent().build();
     }
 }

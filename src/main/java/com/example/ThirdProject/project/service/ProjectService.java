@@ -102,6 +102,22 @@ public class ProjectService {
         projectRepository.delete(project);
     }
 
+    public void deleteTrack(Long projectId, Long trackId, String userId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
+
+        if (!project.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        Track trackToRemove = project.getTracks().stream()
+                .filter(t -> t.getId().equals(trackId))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ErrorCode.TRACK_NOT_FOUND));
+
+        trackToRemove.setDeleted(true);
+    }
+
     @Transactional(readOnly = true)
     public List<ProjectDto> getProjectsByAlbumId(Long albumId) {
         return projectRepository.findByAlbumId(albumId).stream()
