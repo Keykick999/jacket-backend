@@ -33,12 +33,18 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest req) {
         TokenResponse tokens = authService.login(req);
+
+        // access token, refresh token
         ResponseCookie accessCookie = cookieUtil.createAccessTokenCookie(tokens.accessToken());
         ResponseCookie refreshCookie = cookieUtil.createRefreshTokenCookie(tokens.refreshToken());
+
+        // csrf token
+        ResponseCookie csrfCookie = cookieUtil.createCsrfCookie();
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, csrfCookie.toString())
                 .build();
     }
 
@@ -50,10 +56,12 @@ public class AuthController {
 
         ResponseCookie accessCookie = cookieUtil.createAccessTokenCookie(tokens.accessToken());
         ResponseCookie refreshCookie = cookieUtil.createRefreshTokenCookie(tokens.refreshToken());
+        ResponseCookie csrfCookie = cookieUtil.createCsrfCookie();
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, csrfCookie.toString())  // refresh시에 csrf토큰도 재발급
                 .build();
     }
 

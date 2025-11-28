@@ -6,7 +6,6 @@ import com.example.ThirdProject.common.util.CookieUtil;
 import com.example.ThirdProject.user.entity.User;
 import com.example.ThirdProject.user.entity.UserProvider;
 import com.example.ThirdProject.user.repository.UserProviderRepository;
-import com.example.ThirdProject.user.repository.UserRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,12 +26,10 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private final JwtService jwtService;
-    private final UserRepository userRepository;
     private final UserProviderRepository userProviderRepository;
     private final TokenStore tokenStore;
     private final CookieUtil cookieUtil;
 
-//    private final String FRONTEND_CALLBACK_URL = "http://localhost:8080/oauth/callback";
     private final String FRONTEND_CALLBACK_URL = "http://localhost:5173/oauth/callback";
 
     @Override
@@ -73,13 +70,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         long refreshTtl = jwtService.getExpiration(refreshToken).getTime() - System.currentTimeMillis();
         tokenStore.saveRefresh(user.getId(), refreshToken, refreshTtl);
 
-        // CookieUtil을 사용해 쿠키 생성
+        // 쿠키 생성
         ResponseCookie accessCookie = cookieUtil.createAccessTokenCookie(accessToken);
         ResponseCookie refreshCookie = cookieUtil.createRefreshTokenCookie(refreshToken);
+        ResponseCookie csrfCookie = cookieUtil.createCsrfCookie();
 
         // 응답 헤더에 쿠키 추가 (이 시점에 브라우저에 저장 명령이 내려감)
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, csrfCookie.toString());
 
         // 프론트엔드로 리다이렉트
         String targetUrl = UriComponentsBuilder.fromUriString(FRONTEND_CALLBACK_URL)
