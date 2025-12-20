@@ -16,6 +16,7 @@ public enum ErrorCode {
     // Auth Errors
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다."),
+    ACCOUNT_LOCKED(HttpStatus.TOO_MANY_REQUESTS, "계정이 잠겼습니다. 나중에 다시 시도해주세요."),
 
 
     // 이메일 에러

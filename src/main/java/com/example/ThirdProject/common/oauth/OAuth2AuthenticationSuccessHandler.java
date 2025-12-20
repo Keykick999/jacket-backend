@@ -55,16 +55,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .map(UserProvider::getUser) // 연동 기록에서 User FK를 가져옵니다.
                 .orElseThrow(() -> new IllegalStateException("FATAL: User link not found after successful authentication."));
 
-        // UserDetails Stub 생성 (Refresh Token 생성을 위해)
-        org.springframework.security.core.userdetails.UserDetails userDetails = org.springframework.security.core.userdetails.User
-                .withUsername(user.getId()) // UUID를 username으로 사용
-                .password("N/A")
-                .authorities(Collections.emptyList())
-                .build();
-
         // JWT 토큰 생성 및 발행
         String accessToken = jwtService.generateAccessToken(user.getId());
-        String refreshToken = jwtService.generateRefreshToken(userDetails);
+        String refreshToken = jwtService.generateRefreshToken(user.getId());
 
         // Refresh Token 저장
         long refreshTtl = jwtService.getExpiration(refreshToken).getTime() - System.currentTimeMillis();

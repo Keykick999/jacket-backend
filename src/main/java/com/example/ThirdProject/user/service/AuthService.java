@@ -11,17 +11,20 @@ import com.example.ThirdProject.user.repository.UserRepository;
 import com.example.ThirdProject.user.dto.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
+import org.springframework.security.authentication.LockedException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +37,10 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
     private final UserProviderRepository userProviderRepository;
+    private final StringRedisTemplate redisTemplate;
+    private static final String FAIL_KEY_PREFIX = "login:fail:";
+    private static final long FAIL_LIMIT = 5;
+    private static final long LOCK_TIME = 30; // 30분 차단
 
     /**
      * 회원가입
@@ -52,13 +59,35 @@ public class AuthService {
     /**
      * 로그인
      */
-    public TokenResponse login(LoginRequest req) {
-        Authentication auth = authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(req.username(), req.password())
-        );
-        UserDetails user = (UserDetails) auth.getPrincipal();
+    public TokenResponse login(LoginRequest req) throws LockedException {
+        String key = FAIL_KEY_PREFIX + req.username();
 
-        return generateTokens(user);
+        // 로그인 실패 횟수 제한을
+        String countStr = redisTemplate.opsForValue().get(key); // 현재 카운트 확인
+        if (countStr != null && Integer.parseInt(countStr) >= FAIL_LIMIT) {
+            // 5회 넘었으면 TTL(남은 시간) 확인해서 예외 던지기
+            Long expire = redisTemplate.getExpire(key, TimeUnit.MINUTES);
+            throw new CustomException(
+                    ErrorCode.ACCOUNT_LOCKED,
+                    "계정이 잠겼습니다. " + expire + "분 뒤에 다시 시도하세요."
+            );
+        }
+
+        // 비밀번호 검증
+        try {
+            Authentication auth = authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(req.username(), req.password())
+            );
+
+            // 4. [성공 처리] 실패 카운트 삭제
+            redisTemplate.delete(key);
+            UserDetails user = (UserDetails) auth.getPrincipal();
+
+            return generateTokens(user);
+        } catch (BadCredentialsException e) {
+            handleLoginFail(key);
+            throw new BadCredentialsException("비밀번호가 틀렸습니다.");
+        }
     }
 
     /**
@@ -96,6 +125,20 @@ public class AuthService {
     }
 
     // ========================= private 헬퍼 메서드 =========================
+    private void handleLoginFail(String key) {
+        // INCR 명령어 (없으면 1로 생성됨)
+        Long count = redisTemplate.opsForValue().increment(key);
+
+        // 첫 실패면 유효시간(TTL) 설정 (예: 5번 시도를 10분 동안만 기억)
+        if (count != null && count == 1) {
+            redisTemplate.expire(key, 10, TimeUnit.MINUTES);
+        }
+
+        // 5회 도달 시 -> 락 타임(30분)으로 연장해서 못 들어오게 막음
+        if (count != null && count == FAIL_LIMIT) {
+            redisTemplate.expire(key, LOCK_TIME, TimeUnit.MINUTES);
+        }
+    }
 
     private User createUser(RegisterRequest req) {
         return User.builder()

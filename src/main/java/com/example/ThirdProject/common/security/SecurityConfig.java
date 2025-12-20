@@ -46,6 +46,8 @@ public class SecurityConfig {
                     return config;
                 }))
                 .csrf(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)   // 프론트엔드(React)와 API 통신을 하므로, 스프링이 제공하는 기본 로그인 페이지(HTML)가 필요 없음.
+                .httpBasic(AbstractHttpConfigurer::disable)   // 로그인 로직을 Controller(/users/login)에 직접 구현했기 때문에 스프링의 기본 필터(UsernamePasswordAuthenticationFilter)를 사용하지 않음.
                 .sessionManagement(sessionManagement ->
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )

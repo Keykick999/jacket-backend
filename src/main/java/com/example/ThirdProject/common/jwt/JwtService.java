@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
 import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.*;
@@ -65,8 +64,18 @@ public class JwtService {
     public String generateRefreshToken(UserDetails user) {
         Instant now = Instant.now();
         return Jwts.builder()
-                .setId(UUID.randomUUID().toString())
                 .setSubject(user.getUsername())
+                .claim("typ", "refresh")
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(now.plusMillis(refreshExpMs)))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String generateRefreshToken(String userId) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .setSubject(userId)
                 .claim("typ", "refresh")
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusMillis(refreshExpMs)))

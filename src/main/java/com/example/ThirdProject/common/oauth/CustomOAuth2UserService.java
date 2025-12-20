@@ -11,13 +11,11 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Collections;
 import java.util.Optional;
 
@@ -31,12 +29,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        OAuth2AccessToken accessToken = userRequest.getAccessToken();
-
         OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
-        OAuth2User oAuth2User = delegate.loadUser(userRequest);
+        OAuth2User oAuth2User = delegate.loadUser(userRequest); // access token으로 user 정보 가져옴
 
-        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();    // kakao/naver/google
         String userNameAttributeName = userRequest.getClientRegistration()
                 .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
 
@@ -50,11 +46,11 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         User user;
         if (linkedProvider.isPresent()) {
-            // 🚩 Case 1: 연동된 유저 발견 (가장 깔끔한 성공, 이메일 유무 상관 없음)
+            // Case 1: 연동된 유저 발견
             user = linkedProvider.get().getUser(); // FK를 통해 코어 User 객체 획득
 //            user = attributes.update(user); // 프로필 업데이트
         } else if (attributes.getEmail() != null) {
-            // 🚩 Case 2: Provider 연동은 없지만, 이메일은 제공됨. (계정 통합 및 신규 가입 플로우)
+            // Case 2: Provider 연동은 없지만, 이메일은 제공됨. (계정 통합 및 신규 가입)
 
             Optional<User> userByEmail = userRepository.findByEmail(attributes.getEmail());
 
@@ -68,7 +64,6 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                 );
 
                 throw new AccountNeedsLinkingException(dataPayload, "기존 계정이 존재합니다. 연동 확인이 필요합니다.");
-
             } else {
                 // Case 2-B: Email이 DB에 없음 -> 신규 회원 가입
                 user = attributes.toEntity();
@@ -81,14 +76,13 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             }
 
         } else {
-            // 🚩 Case 3: Provider 연동도 없고, 이메일도 없음 (최초 이메일 입력 강제)
+            // Case 3: Provider 연동도 없고, 이메일도 없음 (최초 이메일 입력 강제)
 
             OAuth2FailureData dataPayload = new OAuth2FailureData(
                     attributes.getProviderId(), attributes.getProvider(), attributes.getName(),
                     attributes.getPicture(), null // Email is null
             );
 
-            // Additional Info Required Flow
             throw new AdditionalInfoRequiredException(dataPayload);
         }
 

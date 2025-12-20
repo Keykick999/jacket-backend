@@ -5,6 +5,7 @@ import com.example.ThirdProject.common.exception.AdditionalInfoRequiredException
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
@@ -17,11 +18,14 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
-    private final String FRONTEND_ERROR_CALLBACK_URL = "http://localhost:5173/oauth/error";
-    private final String ADDITIONAL_SIGNUP_URL = "http://localhost:5173/signup/additional";
-    private final String LINK_CONFIRM_URL = "http://localhost:5173/link-confirm"; // 💡 [신규] 연동 확인 페이지
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
-    // 🚩 [핵심 헬퍼] 예외 체인을 탐색하여 원하는 커스텀 예외 객체를 찾아 반환합니다.
+    private final String FRONTEND_ERROR_CALLBACK_URL = frontendUrl + "/oauth/error";
+    private final String ADDITIONAL_SIGNUP_URL = frontendUrl + "/signup/additional";;
+    private final String LINK_CONFIRM_URL = frontendUrl + "/link-confirm"; // 연동 확인 페이지
+
+    // 예외 체인을 탐색하여 원하는 커스텀 예외 객체를 찾아 반환합니다.
     private <T extends AuthenticationException> T getRequiredException(Throwable t, Class<T> targetClass) {
         if (t == null) {
             return null;
