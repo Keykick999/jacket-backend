@@ -41,6 +41,7 @@ jobs:
             # 5. 기존 8080 프로세스 안전하게 종료
             sudo fuser -k -n tcp 8080 || true
             
+            
             # 6. JAR 실행 (plain.jar를 제외하고 실행하도록 더 명확하게 지정)
             sudo nohup java -jar build/libs/*[!plain].jar > ./output.log 2>&1 &
             
