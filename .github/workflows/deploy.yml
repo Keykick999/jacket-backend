@@ -1,0 +1,61 @@
+name: Deploy To GCE VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH로 GCE VM에 접속하여 배포
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          APPLICATION_PROPERTIES: ${{ secrets.APPLICATION_PROPERTIES }} # GitHub Secrets에 저장
+        with:
+          host: ${{ secrets.GCE_HOST }}
+          username: ${{ secrets.GCE_USERNAME }}
+          key: ${{ secrets.GCE_PRIVATE_KEY }}
+          envs: APPLICATION_PROPERTIES
+          script_stop: true
+          script: |
+            set -e
+            # 1. 포트 확인 도구(psmisc) 설치 확인 및 이동
+            sudo apt-get update && sudo apt-get install -y psmisc
+            cd /home/${{ secrets.GCE_USERNAME }}/ThirdProject
+            
+            # 2. 브랜치 최신화
+            git fetch origin
+            git checkout main
+            git pull --ff-only origin main
+            
+            # 3. 설정 파일 적용
+            mkdir -p src/main/resources
+            printf "%s" "$APPLICATION_PROPERTIES" > src/main/resources/application.properties
+            
+            # 4. 권한 부여 및 빌드
+            chmod +x ./gradlew
+            ./gradlew clean build -x test
+            
+            # 5. 기존 8080 프로세스 안전하게 종료
+            sudo fuser -k -n tcp 8080 || true
+            
+            # 6. JAR 실행 (plain.jar를 제외하고 실행하도록 더 명확하게 지정)
+            sudo nohup java -jar build/libs/*[!plain].jar > ./output.log 2>&1 &
+            
+            
+            # (선택) 자바에 443 바인딩 권한 부여 - 비root 실행할 때만 필요
+            # sudo setcap 'cap_net_bind_service=+ep' "$(readlink -f "$(which java)")" || true
+
+            # 배포 검증 (최대 10번, 2초 간격)
+#            for i in {1..10}; do
+#              if curl -skI https://xn--2y5bw4a.site | grep -qE '^HTTP/.* (200|301|302)'; then
+#                echo "HTTPS health check OK"
+#                exit 0
+#              fi
+#              sleep 2
+#            done
+#
+#            echo "Health check failed"
+#            exit 1
