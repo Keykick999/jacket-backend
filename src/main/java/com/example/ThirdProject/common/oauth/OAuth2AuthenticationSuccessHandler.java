@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -28,8 +29,10 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final UserProviderRepository userProviderRepository;
     private final TokenStore tokenStore;
     private final CookieUtil cookieUtil;
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
-    private final String FRONTEND_CALLBACK_URL = "http://localhost:5173/oauth/callback";
+    private final String FRONTEND_CALLBACK_URL = frontendUrl +"/oauth/callback";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
