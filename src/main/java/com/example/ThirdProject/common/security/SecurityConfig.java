@@ -46,9 +46,8 @@ public class SecurityConfig {
                             "http://localhost:5173", // 로컬 개발용 유지
                             frontendUrl              // Vercel 주소
                     ));
-                    config.setAllowedOrigins(Collections.singletonList("http://localhost:5173"));
                     config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    config.setAllowedHeaders(Collections.singletonList("*"));
+                    config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
                     config.setAllowCredentials(true);
                     return config;
                 }))
