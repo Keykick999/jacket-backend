@@ -1,4 +1,4 @@
-name: Deploy To GCE VM
+name: Deploy To GCE with Docker
 
 on:
   push:
@@ -6,61 +6,75 @@ on:
       - main
 
 jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 # 프로젝트 자바 버전에 맞게 수정
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 1. 설정 파일 생성 (빌드 시 포함됨)
+      - name: Create application.properties
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION_PROPERTIES }}" > src/main/resources/application.properties
+
+      # 2. 빌드
+      - name: Build with Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew clean build -x test
+
+      # 3. Docker Hub 로그인
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 4. Docker 이미지 빌드 및 푸시
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/third-project:latest
+
   deploy:
+    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
       - name: SSH로 GCE VM에 접속하여 배포
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          APPLICATION_PROPERTIES: ${{ secrets.APPLICATION_PROPERTIES }} # GitHub Secrets에 저장
         with:
           host: ${{ secrets.GCE_HOST }}
           username: ${{ secrets.GCE_USERNAME }}
           key: ${{ secrets.GCE_PRIVATE_KEY }}
-          envs: APPLICATION_PROPERTIES
-          script_stop: true
           script: |
-            set -e
-            # 1. 포트 확인 도구(psmisc) 설치 확인 및 이동
-            sudo apt-get update && sudo apt-get install -y psmisc
-            cd /home/${{ secrets.GCE_USERNAME }}/ThirdProject
-            
-            # 2. 브랜치 최신화
-            git fetch origin
-            git checkout main
-            git pull --ff-only origin main
-            
-            # 3. 설정 파일 적용
-            mkdir -p src/main/resources
-            printf "%s" "$APPLICATION_PROPERTIES" > src/main/resources/application.properties
-            
-            # 4. 권한 부여 및 빌드
-            chmod +x ./gradlew
-            ./gradlew clean build -x test
-            
-            # 5. 기존 8080 프로세스 안전하게 종료
-            sudo fuser -k -n tcp 8080 || true
-            
-            
-            # 6. JAR 실행 (plain.jar를 제외하고 실행하도록 더 명확하게 지정)
-            sudo nohup java -jar build/libs/*[!plain].jar > ./output.log 2>&1 &
-            
-            
-            # (선택) 자바에 443 바인딩 권한 부여 - 비root 실행할 때만 필요
-            # sudo setcap 'cap_net_bind_service=+ep' "$(readlink -f "$(which java)")" || true
+            # 1. Docker 설치 확인 (없으면 설치 필요)
+            if ! command -v docker &> /dev/null; then
+                sudo apt-get update && sudo apt-get install -y docker.io
+            fi
 
-            # 배포 검증 (최대 10번, 2초 간격)
-#            for i in {1..10}; do
-#              if curl -skI https://xn--2y5bw4a.site | grep -qE '^HTTP/.* (200|301|302)'; then
-#                echo "HTTPS health check OK"
-#                exit 0
-#              fi
-#              sleep 2
-#            done
-#
-#            echo "Health check failed"
-#            exit 1
+            # 2. 최신 이미지 가져오기
+            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/third-project:latest
 
+            # 3. 기존 컨테이너 중지 및 삭제
+            sudo docker stop third-project-container || true
+            sudo docker rm third-project-container || true
 
+            # 4. 새 컨테이너 실행
+            sudo docker run -d \
+              --name third-project-container \
+              -p 8080:8080 \
+              ${{ secrets.DOCKERHUB_USERNAME }}/third-project:latest
 
-
+            # 5. 사용하지 않는 이미지 정리 (용량 관리)
+            sudo docker image prune -f
+            
+            
