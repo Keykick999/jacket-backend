@@ -44,9 +44,10 @@ public class SecurityConfig {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowedOrigins(Arrays.asList(
                             "http://localhost:5173", // 로컬 개발용 유지
-                            frontendUrl              // Vercel 주소
+                            frontendUrl,              // Vercel 주소
+                            "https://audio-mixing-project-pfcdii0wt-cheyoung-myoungs-projects.vercel.app"
                     ));
-                    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(Collections.singletonList("*")); // 모든 헤더 허용
                     config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
                     config.setAllowCredentials(true);
                     return config;
@@ -85,7 +86,7 @@ public class SecurityConfig {
                         )
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new CustomCsrfFilter(), JwtAuthenticationFilter.class)
+//                .addFilterBefore(new CustomCsrfFilter(), JwtAuthenticationFilter.class)
                 .build();
     }
 
