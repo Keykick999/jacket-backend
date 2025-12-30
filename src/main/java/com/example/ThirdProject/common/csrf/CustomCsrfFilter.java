@@ -23,6 +23,7 @@ public class CustomCsrfFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
+        System.out.println("path = " + path);
         // 제외 리스트에 포함된 경로면 필터 실행 안 함 (true 반환)
         return EXCLUDE_URLS.stream().anyMatch(path::startsWith);
     }
