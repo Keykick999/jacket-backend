@@ -11,7 +11,6 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -54,7 +53,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
         AccountNeedsLinkingException linkingException = getRequiredException(exception, AccountNeedsLinkingException.class);
 
 
-        // 3. 🚨 [분기 1: 계정 연동 필요] (가장 중요한 보안 플로우)
+        // 3. [분기 1: 계정 연동 필요] (가장 중요한 보안 플로우)
         if (linkingException != null) {
             OAuth2FailureData failureData = linkingException.getData();
 
@@ -71,7 +70,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
             return;
         }
 
-        // 4. 📧 [분기 2: 이메일 누락]
+        // 4. [분기 2: 이메일 누락]
         if (infoException != null) {
             // 이메일 미동의 시, 추가 정보 입력 페이지로 리다이렉트합니다.
             OAuth2FailureData failureData = infoException.getData();
@@ -89,7 +88,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
         }
 
 
-        // 5. ❌ 기타 모든 실패 (LOGIN_FAILED, invalid_client 등) 처리
+        // 5. 기타 모든 실패 (LOGIN_FAILED, invalid_client 등) 처리
         String errorCode = "LOGIN_FAILED";
         if (exception instanceof OAuth2AuthenticationException) {
             errorCode = ((OAuth2AuthenticationException) exception).getError().getErrorCode();

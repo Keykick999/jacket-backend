@@ -1,6 +1,5 @@
 package com.example.ThirdProject.common.security;
 
-import com.example.ThirdProject.common.csrf.CustomCsrfFilter;
 import com.example.ThirdProject.common.jwt.JwtAuthenticationEntryPoint;
 import com.example.ThirdProject.common.jwt.JwtAuthenticationFilter;
 import com.example.ThirdProject.common.oauth.CustomOAuth2UserService;
@@ -100,6 +99,8 @@ public class SecurityConfig {
         return configuration.getAuthenticationManager();
     }
 }
+
+
 
 
 
