@@ -2,6 +2,7 @@ package com.example.ThirdProject.file.controller;
 
 import com.example.ThirdProject.file.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,18 +21,18 @@ public class FileController {
 
     private final FileStorageService fileStorageService;
 
+    @Value("${app.api.url}")
+    private String apiUrl;
+
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
         String fileName = fileStorageService.storeFile(file);
 
-        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/uploads/")
-                .path(fileName)
-                .toUriString();
+        String fileUrl = apiUrl + "/uploads/" + fileName;
 
         Map<String, String> response = new HashMap<>();
         response.put("fileName", fileName);
-        response.put("fileUrl", fileDownloadUri);
+        response.put("fileUrl", fileUrl);
 
         return ResponseEntity.ok(response);
     }
