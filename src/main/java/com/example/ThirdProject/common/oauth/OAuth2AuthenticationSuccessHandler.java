@@ -6,7 +6,6 @@ import com.example.ThirdProject.common.util.CookieUtil;
 import com.example.ThirdProject.user.entity.User;
 import com.example.ThirdProject.user.entity.UserProvider;
 import com.example.ThirdProject.user.repository.UserProviderRepository;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +31,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    private final String FRONTEND_CALLBACK_URL = frontendUrl +"/oauth/callback";
+//    private final String FRONTEND_CALLBACK_URL = frontendUrl +"/oauth/callback";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
@@ -76,7 +75,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         response.addHeader(HttpHeaders.SET_COOKIE, csrfCookie.toString());
 
         // 프론트엔드로 리다이렉트
-        String targetUrl = UriComponentsBuilder.fromUriString(FRONTEND_CALLBACK_URL)
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl)
+                .path("/oauth/callback") // 경로를 안전하게 붙여줍니다.
                 .build()
                 .encode(StandardCharsets.UTF_8)
                 .toUriString();
