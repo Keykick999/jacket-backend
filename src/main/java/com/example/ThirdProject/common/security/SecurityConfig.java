@@ -90,17 +90,24 @@ public class SecurityConfig {
         // 1. 허용할 Origin 설정
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
-                frontendUrl
+                frontendUrl,
+                "https://xn--2y5bw4a.site"
         ));
 
         // 2. 허용할 HTTP 메서드 설정 (중요: OPTIONS가 있어야 Preflight 통과)
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 
         // 3. 허용할 헤더 설정
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control", "x-requested-with"));
+        config.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "Cache-Control",
+                "x-requested-with",
+                "X-XSRF-TOKEN"
+        ));
 
         // 4. 내보낼 헤더 설정 (프론트에서 JWT 등을 읽어야 할 때 필요)
-        config.setExposedHeaders(Collections.singletonList("Authorization"));
+        config.setExposedHeaders(Arrays.asList("Authorization", "X-XSRF-TOKEN"));
 
         // 5. 쿠키 허용
         config.setAllowCredentials(true);
