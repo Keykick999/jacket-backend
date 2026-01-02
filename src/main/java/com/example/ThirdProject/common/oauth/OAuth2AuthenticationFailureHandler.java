@@ -20,9 +20,10 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    private final String FRONTEND_ERROR_CALLBACK_URL = frontendUrl + "/oauth/error";
-    private final String ADDITIONAL_SIGNUP_URL = frontendUrl + "/signup/additional";;
-    private final String LINK_CONFIRM_URL = frontendUrl + "/link-confirm"; // 연동 확인 페이지
+    // 상수로 선언하지 말고, 메서드로 경로를 관리하세요.
+    private String getErrorUrl() { return frontendUrl + "/oauth/error"; }
+    private String getAdditionalSignupUrl() { return frontendUrl + "/signup/additional"; }
+    private String getLinkConfirmUrl() { return frontendUrl + "/link-confirm"; }
 
     // 예외 체인을 탐색하여 원하는 커스텀 예외 객체를 찾아 반환합니다.
     private <T extends AuthenticationException> T getRequiredException(Throwable t, Class<T> targetClass) {
@@ -58,7 +59,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
             OAuth2FailureData failureData = linkingException.getData();
 
             // 연동 확인 페이지로 리다이렉트
-            String finalUrl = UriComponentsBuilder.fromUriString(LINK_CONFIRM_URL)
+            String finalUrl = UriComponentsBuilder.fromUriString(getLinkConfirmUrl())
                     .queryParam("providerId", failureData.getProviderId())
                     .queryParam("provider", registrationId)
                     .queryParam("existingEmail", failureData.getExistingEmail())
@@ -75,7 +76,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
             // 이메일 미동의 시, 추가 정보 입력 페이지로 리다이렉트합니다.
             OAuth2FailureData failureData = infoException.getData();
 
-            String finalUrl = UriComponentsBuilder.fromUriString(ADDITIONAL_SIGNUP_URL)
+            String finalUrl = UriComponentsBuilder.fromUriString(getAdditionalSignupUrl())
                     .queryParam("provider", registrationId)
                     .queryParam("nickname", failureData.getNickname())
                     .queryParam("providerId", failureData.getProviderId())
@@ -94,7 +95,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
             errorCode = ((OAuth2AuthenticationException) exception).getError().getErrorCode();
         }
 
-        String finalUrl = UriComponentsBuilder.fromUriString(FRONTEND_ERROR_CALLBACK_URL)
+        String finalUrl = UriComponentsBuilder.fromUriString(getErrorUrl())
                 .queryParam("error", errorCode)
                 .build().encode(StandardCharsets.UTF_8)
                 .toUriString();
