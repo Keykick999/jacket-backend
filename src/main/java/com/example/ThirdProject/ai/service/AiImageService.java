@@ -29,6 +29,9 @@ public class AiImageService {
     @Value("${huggingface.api.token}")
     private String apiToken;
 
+    @Value("${app.api.url}")
+    private String backendApiUrl;
+
     public AiImageResponse generateImage(AiImageRequest request) {
         RestTemplate restTemplate = new RestTemplate();
 
@@ -52,13 +55,10 @@ public class AiImageService {
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             String fileName = fileStorageService.storeFile(response.getBody(), "ai_generated_" + System.currentTimeMillis() + ".png");
 
-            String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/uploads/")
-                    .path(fileName)
-                    .toUriString();
+            String fileUrl = backendApiUrl + "/uploads/" + fileName;
 
             return AiImageResponse.builder()
-                    .fileUrl(fileDownloadUri)
+                    .fileUrl(fileUrl)
                     .build();
         } else {
             throw new RuntimeException("Failed to generate image from AI service");
