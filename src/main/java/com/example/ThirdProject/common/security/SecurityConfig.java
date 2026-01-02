@@ -1,5 +1,6 @@
 package com.example.ThirdProject.common.security;
 
+import com.example.ThirdProject.common.csrf.CustomCsrfFilter;
 import com.example.ThirdProject.common.jwt.JwtAuthenticationEntryPoint;
 import com.example.ThirdProject.common.jwt.JwtAuthenticationFilter;
 import com.example.ThirdProject.common.oauth.CustomOAuth2UserService;
@@ -20,6 +21,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.util.Collections;
 import java.util.Arrays;
 
@@ -39,18 +43,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(cors -> cors.configurationSource(request -> {
-                    CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOrigins(Arrays.asList(
-                            "http://localhost:5173", // 로컬 개발용 유지
-                            frontendUrl,              // Vercel 주소
-                            "https://audio-mixing-project-pfcdii0wt-cheyoung-myoungs-projects.vercel.app"
-                    ));
-                    config.setAllowedHeaders(Collections.singletonList("*")); // 모든 헤더 허용
-                    config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
-                    config.setAllowCredentials(true);
-                    return config;
-                }))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)   // 프론트엔드(React)와 API 통신을 하므로, 스프링이 제공하는 기본 로그인 페이지(HTML)가 필요 없음.
                 .httpBasic(AbstractHttpConfigurer::disable)   // 로그인 로직을 Controller(/users/login)에 직접 구현했기 때문에 스프링의 기본 필터(UsernamePasswordAuthenticationFilter)를 사용하지 않음.
@@ -85,8 +78,36 @@ public class SecurityConfig {
                         )
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-//                .addFilterBefore(new CustomCsrfFilter(), JwtAuthenticationFilter.class)
+                .addFilterBefore(new CustomCsrfFilter(), JwtAuthenticationFilter.class)
                 .build();
+    }
+
+    // CORS 설정을 별도 빈으로 분리하여 안전하게 관리
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        // 1. 허용할 Origin 설정
+        config.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                frontendUrl
+        ));
+
+        // 2. 허용할 HTTP 메서드 설정 (중요: OPTIONS가 있어야 Preflight 통과)
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+        // 3. 허용할 헤더 설정
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control", "x-requested-with"));
+
+        // 4. 내보낼 헤더 설정 (프론트에서 JWT 등을 읽어야 할 때 필요)
+        config.setExposedHeaders(Collections.singletonList("Authorization"));
+
+        // 5. 쿠키 허용
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean

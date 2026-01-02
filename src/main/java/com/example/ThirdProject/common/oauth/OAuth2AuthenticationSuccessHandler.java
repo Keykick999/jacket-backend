@@ -31,8 +31,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-//    private final String FRONTEND_CALLBACK_URL = frontendUrl +"/oauth/callback";
-
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
         // 1. Principal에서 Provider ID (Social ID)와 Provider 이름(kakao, naver)을 추출합니다.
