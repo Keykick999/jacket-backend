@@ -22,6 +22,7 @@ public class CookieUtil {   // TODO 배포 후에 쿠키들 도메인 설정 하
                 .path("/")
                 .maxAge(accessTokenExpiration / 1000) // 밀리초 -> 초 변환
                 .sameSite("None")
+                .domain(".xn--2y5bw4a.site")
                 .build();
     }
 
@@ -33,6 +34,7 @@ public class CookieUtil {   // TODO 배포 후에 쿠키들 도메인 설정 하
                 .path("/api/users/refresh") // refresh 요청시에만 서버로 전송되게 설정
                 .maxAge(refreshTokenExpiration / 1000) // 밀리초 -> 초 변환
                 .sameSite("None")   // TODO 배포후에 lax나 strict로 설정 변경하기
+                .domain(".xn--2y5bw4a.site")
                 .build();
     }
 
@@ -46,6 +48,7 @@ public class CookieUtil {   // TODO 배포 후에 쿠키들 도메인 설정 하
                 .path("/")       // 전체 경로
                 .maxAge(refreshTokenExpiration / 1000) // refresh token이랑 수명 맞춤 -> refresh시에 csrf토큰 없어서 에러나지 않게
                 .sameSite("None")
+                .domain(".xn--2y5bw4a.site")
                 .build();
     }
 }
