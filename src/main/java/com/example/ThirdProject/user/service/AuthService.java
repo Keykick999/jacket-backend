@@ -17,6 +17,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +61,9 @@ public class AuthService {
      * 로그인
      */
     public TokenResponse login(LoginRequest req) throws LockedException {
+        User user = userRepository.findByLoginId(req.username())
+                .orElseThrow(() -> new UsernameNotFoundException("아이디 또는 비밀번호가 틀렸습니다."));
+
         String key = FAIL_KEY_PREFIX + req.username();
 
         // 로그인 실패 횟수 제한을
@@ -76,14 +80,14 @@ public class AuthService {
         // 비밀번호 검증
         try {
             Authentication auth = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(req.username(), req.password())
+                    new UsernamePasswordAuthenticationToken(user.getId(), req.password())
             );
 
             // 4. [성공 처리] 실패 카운트 삭제
             redisTemplate.delete(key);
-            UserDetails user = (UserDetails) auth.getPrincipal();
+            UserDetails userDetails = (UserDetails) auth.getPrincipal();
 
-            return generateTokens(user);
+            return generateTokens(userDetails);
         } catch (BadCredentialsException e) {
             handleLoginFail(key);
             throw new BadCredentialsException("비밀번호가 틀렸습니다.");
