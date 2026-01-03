@@ -3,7 +3,6 @@ package com.example.ThirdProject.user.controller;
 import com.example.ThirdProject.common.util.CookieUtil;
 import com.example.ThirdProject.user.dto.*;
 import com.example.ThirdProject.user.service.AuthService;
-import jakarta.servlet.http.Cookie;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -11,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Collections;
 import java.util.Map;
 
