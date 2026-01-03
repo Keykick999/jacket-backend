@@ -144,10 +144,11 @@ public class AuthService {
         return User.builder()
                 .id(UUID.randomUUID().toString())
                 .loginId(req.userId())
-                .password(passwordEncoder.encode(req.password()))
-                .name(req.userName())
                 .nickname(req.nickname())
+                .password(passwordEncoder.encode(req.password()))
+                .email(req.email())
                 .phone(req.phone())
+                .name(req.userName())
                 .build();
     }
 
