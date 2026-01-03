@@ -1,8 +1,6 @@
 package com.example.ThirdProject.email.service;
 
-import com.example.ThirdProject.common.exception.EmailDuplicateForLinkingException;
-import com.example.ThirdProject.common.exception.EmailNotVerifiedException;
-import com.example.ThirdProject.common.exception.InvalidVerificationCodeException;
+import com.example.ThirdProject.common.exception.*;
 import com.example.ThirdProject.email.util.EmailSender;
 import com.example.ThirdProject.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +50,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     public void verifyAndMarkAsVerified(String email, String purpose, String code) {
         String saved = redis.opsForValue().get(codeKey(email, purpose));
         if (saved == null || !saved.equals(code)) {
-            throw new InvalidVerificationCodeException("인증 코드가 올바르지 않거나 만료되었습니다.");
+            throw new InvalidVerificationCodeException();
         }
 
         // 사용 후 코드 삭제
