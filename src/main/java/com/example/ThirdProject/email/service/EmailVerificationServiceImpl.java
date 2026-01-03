@@ -100,3 +100,5 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
         return String.format("%0" + codeLength + "d", random.nextInt(max));
     }
 }
+
+
