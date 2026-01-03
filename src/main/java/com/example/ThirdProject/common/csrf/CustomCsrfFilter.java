@@ -15,9 +15,10 @@ public class CustomCsrfFilter extends OncePerRequestFilter {
     // CSRF 검사를 생략할 URL 리스트 (로그인, 회원가입 등)
     private static final List<String> EXCLUDE_URLS = Arrays.asList(
             "/users/login",
-            "/users/signup", // 회원가입이 있다면 추가
+            "/users/register", // 회원가입이 있다면 추가
             "/oauth2/",      // OAuth2 관련 요청은 별도 필터가 처리하거나 리다이렉트임
-            "/login/oauth2/"
+            "/login/oauth2/",
+            "/api/email/"
     );
 
     @Override
