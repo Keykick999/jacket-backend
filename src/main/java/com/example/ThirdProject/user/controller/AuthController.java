@@ -20,13 +20,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService auth;
     private final AuthService authService;
     private final CookieUtil cookieUtil;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Valid RegisterRequest req) {
-        String userId = auth.register(req);
+        String userId = authService.register(req);
         return ResponseEntity.created(java.net.URI.create("/api/users/" + userId)).build();
     }
 
@@ -67,7 +66,7 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestBody @Valid LogoutRequest req) {
-        auth.logout(req);
+        authService.logout(req);
         return ResponseEntity.noContent().build();
     }
 
@@ -102,6 +101,12 @@ public class AuthController {
     public ResponseEntity<Void> checkAuth() {
         // TODO: 나중에 회원 정보(ID, 이름, 프로필 등) 반환 로직 추가 필요.
         // 지금은 프론트에서 로그인 여부 판단을 위해서만 설정해뒀음.
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/check-id")
+    public ResponseEntity<Void> checkId(@RequestParam("userId") String userId) {
+        authService.checkUserIdAvailability(userId);
         return ResponseEntity.ok().build();
     }
 }

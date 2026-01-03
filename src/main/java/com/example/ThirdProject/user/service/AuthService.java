@@ -9,7 +9,6 @@ import com.example.ThirdProject.user.entity.UserProvider;
 import com.example.ThirdProject.user.repository.UserProviderRepository;
 import com.example.ThirdProject.user.repository.UserRepository;
 import com.example.ThirdProject.user.dto.*;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -20,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.authentication.LockedException;
 import java.util.Optional;
@@ -256,5 +256,17 @@ public class AuthService {
                 .accessToken(newAccessToken)
                 .userUuid(existingUser.getId())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public void checkUserIdAvailability(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new InvalidRequestException("아이디를 입력해주세요.");
+        }
+
+        if (userRepository.existsByLoginId(userId)) {
+            throw new UserIdDuplicateException();
+        }
+        // 중복이 아니면 아무것도 하지 않음 (성공 처리)
     }
 }
