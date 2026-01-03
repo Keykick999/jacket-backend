@@ -13,7 +13,6 @@ import java.util.Random;
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationServiceImpl implements EmailVerificationService {
-
     private final UserRepository userRepository;
     private final StringRedisTemplate redis;
     private final EmailSender mailSender;
@@ -77,7 +76,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     public void ensureVerified(String email, String purpose, boolean oneTimeUse) {
         String v = redis.opsForValue().get(verifiedKey(email, purpose));
         if (v == null) {
-            throw new EmailNotVerifiedException(email, purpose);
+            throw new EmailNotVerifiedException();
         }
         if (oneTimeUse) redis.delete(verifiedKey(email, purpose));
     }

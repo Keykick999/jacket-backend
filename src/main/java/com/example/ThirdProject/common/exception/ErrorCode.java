@@ -23,6 +23,7 @@ public enum ErrorCode {
     EMAIL_DUPLICATE_FOR_LINKING(HttpStatus.CONFLICT, "입력하신 이메일은 이미 등록된 계정입니다. 연동을 진행해주세요."),
     EMAIL_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 사용 중인 이메일입니다."),
     INVALID_VERIFICATION_CODE(HttpStatus.BAD_REQUEST, "인증 코드가 올바르지 않거나 만료되었습니다."),
+    EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "이메일이 인증되지 않았습니다."),
 
     // 프로젝트 에러
     PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
