@@ -43,7 +43,7 @@ public class AuthService {
     private static final String FAIL_KEY_PREFIX = "login:fail:";
     private static final long FAIL_LIMIT = 5;
     private static final long LOCK_TIME = 30; // 30분 차단
-    private EmailSender emailSender;
+    private final EmailSender emailSender;
 
     /**
      * 회원가입
