@@ -4,6 +4,7 @@ import com.example.ThirdProject.common.exception.*;
 import com.example.ThirdProject.common.jwt.JwtService;
 import com.example.ThirdProject.common.jwt.TokenStore;
 import com.example.ThirdProject.email.service.EmailVerificationService;
+import com.example.ThirdProject.email.util.EmailSender;
 import com.example.ThirdProject.user.entity.User;
 import com.example.ThirdProject.user.entity.UserProvider;
 import com.example.ThirdProject.user.repository.UserProviderRepository;
@@ -42,6 +43,7 @@ public class AuthService {
     private static final String FAIL_KEY_PREFIX = "login:fail:";
     private static final long FAIL_LIMIT = 5;
     private static final long LOCK_TIME = 30; // 30분 차단
+    private EmailSender emailSender;
 
     /**
      * 회원가입
@@ -273,5 +275,32 @@ public class AuthService {
             throw new UserIdDuplicateException();
         }
         // 중복이 아니면 아무것도 하지 않음 (성공 처리)
+    }
+
+    public void findId(FindIdRequest req) {
+        // 1. 이메일 인증 여부 확인 (한 번만 사용하고 삭제)
+        emailVerificationService.ensureVerified(req.email(), "find-id");
+
+        // 2. 해당 이메일로 가입된 유저 찾기
+        User user = userRepository.findByEmail(req.email())
+                .orElseThrow(() -> new UserNotFoundException());
+
+        // 3. 이메일로 아이디 전송
+        String subject = "[FilterFacts] 요청하신 아이디 정보입니다.";
+        String text = "안녕하세요, " + user.getLoginId() + "님!\n\n고객님의 아이디는 [" + user.getLoginId() + "] 입니다.";
+        emailSender.send(user.getEmail(), subject, text);
+    }
+
+    public void resetPassword(ResetPasswordRequest req) {
+        // 1. 이메일 인증 여부 확인
+        emailVerificationService.ensureVerified(req.email(), "reset-password");
+
+        // 2. 유저 존재 확인
+        User user = userRepository.findByEmail(req.email())
+                .orElseThrow(() -> new UserNotFoundException());
+
+        // 3. 비밀번호 업데이트 (BCrypt 등으로 암호화 필수)
+        user.setPassword(passwordEncoder.encode(req.newPassword()));
+        userRepository.save(user);
     }
 }

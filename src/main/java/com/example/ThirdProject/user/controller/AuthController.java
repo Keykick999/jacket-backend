@@ -107,4 +107,19 @@ public class AuthController {
         authService.checkUserIdAvailability(userId);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/find-id")
+    public ResponseEntity<Void> findId(@RequestBody @Valid FindIdRequest req) {
+        authService.findId(req);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 비밀번호 재설정: 이메일 인증이 완료된 후, 새로운 비밀번호로 변경
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequest req) {
+        authService.resetPassword(req);
+        return ResponseEntity.ok().build();
+    }
 }
