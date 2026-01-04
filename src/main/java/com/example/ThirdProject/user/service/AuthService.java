@@ -287,7 +287,7 @@ public class AuthService {
 
         // 3. 이메일로 아이디 전송
         String subject = "[FilterFacts] 요청하신 아이디 정보입니다.";
-        String text = "안녕하세요, " + user.getLoginId() + "님!\n\n고객님의 아이디는 [" + user.getLoginId() + "] 입니다.";
+        String text = "안녕하세요, " + user.getName() + "님!\n\n고객님의 아이디는 [" + user.getLoginId() + "] 입니다.";
         emailSender.send(user.getEmail(), subject, text);
     }
 
