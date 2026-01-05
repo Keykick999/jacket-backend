@@ -11,6 +11,7 @@ import com.example.ThirdProject.user.repository.UserProviderRepository;
 import com.example.ThirdProject.user.repository.UserRepository;
 import com.example.ThirdProject.user.dto.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -102,6 +104,7 @@ public class AuthService {
     public TokenResponse refresh(String refresh) {
         String username = jwtService.getUserId(refresh);
         if (!store.isRefreshValid(username, refresh)) {
+            log.warn("[SERVICE REFRESH FAIL] Invalid or expired refresh token for user: {}", username);
             throw new InvalidRefreshTokenException();
         }
 

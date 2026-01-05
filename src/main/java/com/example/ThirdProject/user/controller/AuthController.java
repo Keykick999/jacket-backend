@@ -5,6 +5,7 @@ import com.example.ThirdProject.user.dto.*;
 import com.example.ThirdProject.user.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -49,6 +51,7 @@ public class AuthController {
     public ResponseEntity<Void> refresh(
             @CookieValue(value = "refresh-token", required = true) String refreshToken
     ) {
+        log.info("Refresh token: {}", refreshToken);
         TokenResponse tokens = authService.refresh(refreshToken);
 
         ResponseCookie accessCookie = cookieUtil.createAccessTokenCookie(tokens.accessToken());
