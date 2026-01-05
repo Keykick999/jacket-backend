@@ -5,3 +5,4 @@ public class InvalidRefreshTokenException extends CustomException {
         super(ErrorCode.INVALID_REFRESH_TOKEN);
     }
 }
+
