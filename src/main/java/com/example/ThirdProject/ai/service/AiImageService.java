@@ -29,9 +29,6 @@ public class AiImageService {
     @Value("${huggingface.api.token}")
     private String apiToken;
 
-    @Value("${app.api.url}")
-    private String backendApiUrl;
-
     public AiImageResponse generateImage(AiImageRequest request) {
         RestTemplate restTemplate = new RestTemplate();
 
@@ -53,9 +50,11 @@ public class AiImageService {
         );
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            // 1. MinIO에 byte[] 저장 (FileStorageService의 수정한 메서드 활용)
             String fileName = fileStorageService.storeFile(response.getBody(), "ai_generated_" + System.currentTimeMillis() + ".png");
 
-            String fileUrl = backendApiUrl + "/uploads/" + fileName;
+            // 2. 고정된 서버 URL 대신 MinIO의 Pre-signed URL을 생성하여 반환
+            String fileUrl = fileStorageService.getFileUrl(fileName);
 
             return AiImageResponse.builder()
                     .fileUrl(fileUrl)
