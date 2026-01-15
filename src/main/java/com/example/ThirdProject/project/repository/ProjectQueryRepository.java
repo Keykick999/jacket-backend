@@ -35,7 +35,7 @@ public class ProjectQueryRepository {
     /**
      * 프로젝트 목록 조회 (Slice 기반 무한 스크롤)
      */
-    public Slice<ProjectDto> searchProjects(Long userId, Pageable pageable) {
+    public Slice<ProjectDto> searchProjects(String userId, Pageable pageable) {
         // 1. 기본 프로젝트 정보와 트랙 정보를 Join해서 가져옵니다.
         List<ProjectDto> content = queryFactory
                 .select(new QProjectDto(

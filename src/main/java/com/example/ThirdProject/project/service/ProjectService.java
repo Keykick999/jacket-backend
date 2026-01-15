@@ -177,71 +177,72 @@ public class ProjectService {
     }
 
     private ProjectDto mapToDto(Project project) {
-        ProjectDto dto = new ProjectDto();
-        dto.setId(project.getId());
-        dto.setName(project.getName());
-        dto.setBpm(project.getBpm());
-        dto.setTimeSignature(project.getTimeSignature());
-        dto.setCreatedAt(project.getCreatedAt());
-        dto.setUpdatedAt(project.getUpdatedAt());
-        if (project.getAlbum() != null) {
-            dto.setAlbumId(project.getAlbum().getId());
-        }
+        // ProjectDto.builder()를 사용하여 객체를 생성합니다.
+        // 만약 DTO에 @Builder가 없다면 setter를 사용하되
+        // ProjectDto에 @NoArgsConstructor가 반드시 있어야 합니다.
 
         List<TrackDto> trackDtos = project.getTracks().stream()
+                .filter(track -> !track.isDeleted()) // 삭제된 트랙 제외 로직 추가 권장
                 .sorted(Comparator.comparingInt(Track::getOrderIndex))
-                .map(track -> {
-                    TrackDto trackDto = new TrackDto();
-                    trackDto.setId(track.getId());
-                    trackDto.setName(track.getName());
-                    trackDto.setType(track.getType());
-                    trackDto.setColor(track.getColor());
-                    trackDto.setVolume((float) track.getVolume());
-                    trackDto.setPan((float) track.getPan());
-                    trackDto.setIsMuted(track.isMuted());
-                    trackDto.setIsSolo(track.isSolo());
-                    trackDto.setOrderIndex(track.getOrderIndex());
-
-                    List<PluginDto> pluginDtos = track.getPlugins().stream()
-                            .sorted(Comparator.comparingInt(Plugin::getOrderIndex))
-                            .map(plugin -> {
-                                PluginDto pluginDto = new PluginDto();
-                                pluginDto.setId(plugin.getId());
-                                pluginDto.setName(plugin.getName());
-                                pluginDto.setType(plugin.getType());
-                                pluginDto.setOrderIndex(plugin.getOrderIndex());
-
-                                Map<String, String> params = plugin.getParameters().stream()
-                                        .collect(Collectors.toMap(PluginParameter::getName, PluginParameter::getValue));
-                                pluginDto.setParameters(params);
-
-                                return pluginDto;
-                            })
-                            .collect(Collectors.toList());
-                    trackDto.setPlugins(pluginDtos);
-
-                    List<ClipDto> clipDtos = track.getClips().stream()
-                            .map(clip -> {
-                                ClipDto clipDto = new ClipDto();
-                                clipDto.setId(clip.getId());
-                                clipDto.setName(clip.getName());
-                                clipDto.setStartTime(clip.getStartTime());
-                                clipDto.setDuration(clip.getDuration());
-                                clipDto.setOffset(clip.getOffset());
-                                clipDto.setSourceUrl(clip.getSourceUrl());
-                                clipDto.setVolume(clip.getVolume());
-                                clipDto.setPan(clip.getPan());
-                                clipDto.setMuted(clip.isMuted());
-                                return clipDto;
-                            })
-                            .collect(Collectors.toList());
-                    trackDto.setClips(clipDtos);
-
-                    return trackDto;
-                })
+                .map(this::mapTrackToDto)
                 .collect(Collectors.toList());
 
-        dto.setTracks(trackDtos);
-        return dto;
+        return ProjectDto.builder()
+                .id(project.getId())
+                .name(project.getName())
+                .bpm(project.getBpm())
+                .timeSignature(project.getTimeSignature())
+                .createdAt(project.getCreatedAt())
+                .updatedAt(project.getUpdatedAt())
+                .albumId(project.getAlbum() != null ? project.getAlbum().getId() : null)
+                .tracks(trackDtos)
+                .build();
+    }
+
+    // 트랙 변환 로직 분리 (가독성)
+    private TrackDto mapTrackToDto(Track track) {
+        return TrackDto.builder()
+                .id(track.getId())
+                .name(track.getName())
+                .type(track.getType())
+                .color(track.getColor())
+                .volume((float) track.getVolume())
+                .pan((float) track.getPan())
+                .isMuted(track.isMuted())
+                .isSolo(track.isSolo())
+                .orderIndex(track.getOrderIndex())
+                .plugins(track.getPlugins().stream()
+                        .sorted(Comparator.comparingInt(Plugin::getOrderIndex))
+                        .map(this::mapPluginToDto)
+                        .collect(Collectors.toList()))
+                .clips(track.getClips().stream()
+                        .map(this::mapClipToDto)
+                        .collect(Collectors.toList()))
+                .build();
+    }
+
+    private PluginDto mapPluginToDto(Plugin plugin) {
+        return PluginDto.builder()
+                .id(plugin.getId())
+                .name(plugin.getName())
+                .type(plugin.getType())
+                .orderIndex(plugin.getOrderIndex())
+                .parameters(plugin.getParameters().stream()
+                        .collect(Collectors.toMap(PluginParameter::getName, PluginParameter::getValue)))
+                .build();
+    }
+
+    private ClipDto mapClipToDto(Clip clip) {
+        return ClipDto.builder()
+                .id(clip.getId())
+                .name(clip.getName())
+                .startTime(clip.getStartTime())
+                .duration(clip.getDuration())
+                .offset(clip.getOffset())
+                .sourceUrl(clip.getSourceUrl())
+                .volume(clip.getVolume())
+                .pan(clip.getPan())
+                .isMuted(clip.isMuted())
+                .build();
     }
 }

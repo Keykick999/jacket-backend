@@ -1,10 +1,14 @@
 package com.example.ThirdProject.project.dto;
 
 import com.example.ThirdProject.project.enums.TrackType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import java.util.List;
 
 @Data
+@AllArgsConstructor
+@Builder
 public class TrackDto {
     private Long id;
     private String name;
