@@ -7,10 +7,13 @@ import com.example.ThirdProject.project.dto.PluginDto;
 import com.example.ThirdProject.project.dto.ProjectDto;
 import com.example.ThirdProject.project.dto.TrackDto;
 import com.example.ThirdProject.project.entity.*;
+import com.example.ThirdProject.project.repository.ProjectQueryRepository;
 import com.example.ThirdProject.project.repository.ProjectRepository;
 import com.example.ThirdProject.user.entity.User;
 import com.example.ThirdProject.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +29,7 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final ProjectQueryRepository projectQueryRepository;
 
     public ProjectDto createProject(String userId, ProjectDto projectDto) {
         User user = userRepository.findById(userId)
@@ -49,18 +53,20 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProjectDto> getProjectsByUserId(String userId) {
-        return projectRepository.findByUserId(userId).stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+    public Slice<ProjectDto> getProjectsByUserId(String userId, Pageable pageable) {
+        return projectQueryRepository.searchProjects(userId, pageable);
     }
 
     @Transactional(readOnly = true)
     public ProjectDto getProject(Long projectId, String userId) {
-        Project project = projectRepository.findByIdAndUserId(projectId, userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
+        ProjectDto projectDto = projectQueryRepository.getProjectDetail(projectId, userId);
 
-        return mapToDto(project);
+        // 결과가 null이면 해당 프로젝트가 없거나 본인 소유가 아님
+        if (projectDto == null) {
+            throw new g(ErrorCode.PROJECT_NOT_FOUND);
+        }
+
+        return projectDto;
     }
 
     public ProjectDto updateProject(Long projectId, String userId, ProjectDto projectDto) {
@@ -115,10 +121,8 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProjectDto> getProjectsByAlbumId(Long albumId) {
-        return projectRepository.findByAlbumId(albumId).stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+    public Slice<ProjectDto> getProjectsByAlbumId(Long albumId, Pageable pageable) {
+        return projectQueryRepository.searchProjectsByAlbumId(albumId, pageable);
     }
 
     private Track mapToEntity(TrackDto dto, Project project) {

@@ -3,6 +3,10 @@ package com.example.ThirdProject.project.controller;
 import com.example.ThirdProject.project.dto.ProjectDto;
 import com.example.ThirdProject.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,9 +26,12 @@ public class ProjectController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectDto>> getProjects(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<Slice<ProjectDto>> getProjects(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
         String userId = userDetails.getUsername();
-        return ResponseEntity.ok(projectService.getProjectsByUserId(userId));
+        return ResponseEntity.ok(projectService.getProjectsByUserId(userId, pageable));
     }
 
     @GetMapping("/{id}")
