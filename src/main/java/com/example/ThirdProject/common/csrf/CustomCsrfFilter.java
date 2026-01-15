@@ -21,7 +21,8 @@ public class CustomCsrfFilter extends OncePerRequestFilter {
             "/api/users/**",
             "/oauth2/**",
             "/login/oauth2/**",
-            "/api/email/**"
+            "/api/email/**",
+            "/api/admin/test/**"
     );
 
     private final List<String> ALLOWED_HTTP_METHODS = List.of("GET", "HEAD", "OPTIONS");
