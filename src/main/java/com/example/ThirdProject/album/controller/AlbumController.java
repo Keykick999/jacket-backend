@@ -6,6 +6,8 @@ import com.example.ThirdProject.album.service.AlbumService;
 import com.example.ThirdProject.project.dto.ProjectDto;
 import com.example.ThirdProject.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -49,7 +51,7 @@ public class AlbumController {
     }
 
     @GetMapping("/{albumId}/projects")
-    public ResponseEntity<List<ProjectDto>> getProjectsByAlbum(@PathVariable Long albumId) {
-        return ResponseEntity.ok(projectService.getProjectsByAlbumId(albumId));
+    public ResponseEntity<Slice<ProjectDto>> getProjectsByAlbum(@PathVariable Long albumId, Pageable pageable) {
+        return ResponseEntity.ok(projectService.getProjectsByAlbumId(albumId, pageable));
     }
 }
