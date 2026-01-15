@@ -111,4 +111,18 @@ public class JwtService {
     private Jws<Claims> parse(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
     }
+
+    public Optional<String> getUserIdIfValid(String token) {
+        if (token == null || token.isBlank()) return Optional.empty();
+        try {
+            Claims body = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return Optional.ofNullable(body.getSubject());
+        } catch (JwtException | IllegalArgumentException e) {
+            return Optional.empty(); // 만료, 잘못된 서명 등 모든 예외를 empty로 처리
+        }
+    }
 }

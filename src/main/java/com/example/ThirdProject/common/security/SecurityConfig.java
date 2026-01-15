@@ -60,7 +60,7 @@ public class SecurityConfig {
                                 "/error",
                                 "/favicon.ico",
                                 "/uploads/**",
-                                "/api/admin/test"
+                                "/api/admin/test/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
