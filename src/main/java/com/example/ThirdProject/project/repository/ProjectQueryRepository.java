@@ -6,6 +6,7 @@ import com.example.ThirdProject.project.entity.QPlugin;
 import com.example.ThirdProject.project.entity.QProject;
 import com.example.ThirdProject.project.entity.QTrack;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +47,8 @@ public class ProjectQueryRepository {
                         project.timeSignature,
                         project.createdAt,
                         project.updatedAt,
-                        project.album.id
+                        project.album.id,
+                        Expressions.asSimple(new ArrayList<>())
                 ))
                 .from(project)
                 .where(project.user.id.eq(userId))
@@ -71,37 +74,88 @@ public class ProjectQueryRepository {
      * 단일 프로젝트 상세 조회 (모든 계층 데이터 포함)
      */
     public ProjectDto getProjectDetail(Long projectId, String userId) {
-        // 상세 조회의 경우, 데이터가 깊으므로(Project > Track > Clip)
-        // 쿼리를 쪼개서 가져오는 것이 사용자님이 제시하신 패턴과 일치하며 효율적입니다.
-
-        // 1. Project & Tracks (1번 쿼리)
+        // 1. 프로젝트 기본 정보 조회 (QProjectDto 인자 7개 생성자 사용)
         ProjectDto projectDto = queryFactory
+                .select(new QProjectDto(
+                        project.id,
+                        project.name,
+                        project.bpm,
+                        project.timeSignature,
+                        project.createdAt,
+                        project.updatedAt,
+                        project.album.id,
+                        Expressions.asSimple(new ArrayList<>())
+                ))
                 .from(project)
-                .leftJoin(project.tracks, track)
                 .where(project.id.eq(projectId).and(project.user.id.eq(userId)))
-                .transform(groupBy(project.id).as(Projections.fields(ProjectDto.class,
-                        project.id, project.name, project.bpm, project.timeSignature,
-                        list(Projections.fields(TrackDto.class,
-                                track.id, track.name, track.type, track.orderIndex)).as("tracks")
-                ))).get(projectId);
+                .fetchOne();
 
+        // 프로젝트가 없거나 권한이 없으면 즉시 종료
         if (projectDto == null) return null;
 
-        List<Long> trackIds = projectDto.getTracks().stream().map(TrackDto::getId).toList();
-        if (trackIds.isEmpty()) return projectDto;
+        // 2. 해당 프로젝트에 속한 트랙 목록 조회 (QTrackDto 인자 9개 생성자 사용)
+        List<TrackDto> tracks = queryFactory
+                .select(new QTrackDto(
+                        track.id,
+                        track.name,
+                        track.type,
+                        track.color,
+                        track.volume.floatValue(), // DoublePath를 Float으로 변환 (에러 방지)
+                        track.pan.floatValue(),    // DoublePath를 Float으로 변환 (에러 방지)
+                        track.isMuted,
+                        track.isSolo,
+                        track.orderIndex
+                ))
+                .from(track)
+                .where(track.project.id.eq(projectId))
+                .orderBy(track.orderIndex.asc())
+                .fetch();
 
-        // 2. Clips & Plugins (IN 절을 이용한 쿼리 분해)
-        Map<Long, List<ClipDto>> clipsMap = queryFactory
-                .from(clip)
-                .where(clip.track.id.in(trackIds))
-                .transform(groupBy(clip.track.id).as(list(Projections.fields(ClipDto.class,
-                        clip.id, clip.name, clip.sourceUrl, clip.startTime, clip.duration))));
+        projectDto.setTracks(tracks);
 
-        // 3. 조립
-        projectDto.getTracks().forEach(t -> t.setClips(clipsMap.getOrDefault(t.getId(), Collections.emptyList())));
+        // 3. 트랙들에 속한 클립들을 한 번에 조회하여 매핑 (N+1 방지)
+        List<Long> trackIds = tracks.stream()
+                .map(TrackDto::getId)
+                .toList();
+
+        if (!trackIds.isEmpty()) {
+            // 클립 정보와 소속 트랙 ID를 함께 가져오기 위해 Projections.constructor 사용
+            // 별도의 DTO 클래스 없이 Map으로 조립하기 위한 전략
+            var clipsWithTrackId = queryFactory
+                    .select(Projections.fields(ClipGroupDto.class,
+                            clip.track.id.as("trackId"),
+                            new QClipDto(
+                                    clip.id,
+                                    clip.name,
+                                    clip.startTime,
+                                    clip.duration,
+                                    clip.offset,
+                                    clip.sourceUrl,
+                                    clip.volume,
+                                    clip.pan,
+                                    clip.isMuted
+                            ).as("clipDto")
+                    ))
+                    .from(clip)
+                    .where(clip.track.id.in(trackIds))
+                    .fetch();
+
+            // 트랙 ID별로 클립 리스트 그룹화
+            Map<Long, List<ClipDto>> clipsMap = clipsWithTrackId.stream()
+                    .collect(Collectors.groupingBy(
+                            ClipGroupDto::getTrackId,
+                            Collectors.mapping(ClipGroupDto::getClipDto, Collectors.toList())
+                    ));
+
+            // 각 트랙 객체에 조회된 클립 리스트 주입
+            tracks.forEach(t ->
+                    t.setClips(clipsMap.getOrDefault(t.getId(), Collections.emptyList()))
+            );
+        }
 
         return projectDto;
     }
+
 
     /**
      * 앨범 ID 기준 프로젝트 목록 조회 (Slice)

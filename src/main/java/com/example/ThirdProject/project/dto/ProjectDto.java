@@ -8,8 +8,8 @@ import java.util.List;
 
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 @Builder
+@Setter
 public class ProjectDto {
     private Long id;
     private String name;
@@ -20,9 +20,10 @@ public class ProjectDto {
     private Long albumId;
     private List<TrackDto> tracks;
 
-    @QueryProjection // 이 어노테이션이 반드시 있어야 Q파일이 생성됩니다!
+    @QueryProjection
     public ProjectDto(Long id, String name, Integer bpm, String timeSignature,
-                      LocalDateTime createdAt, LocalDateTime updatedAt, Long albumId) {
+                      LocalDateTime createdAt, LocalDateTime updatedAt, Long albumId,
+                      List<TrackDto> tracks) { // 생성자에 tracks 추가 (총 8개 인자)
         this.id = id;
         this.name = name;
         this.bpm = bpm;
@@ -30,5 +31,6 @@ public class ProjectDto {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.albumId = albumId;
+        this.tracks = tracks;
     }
 }
