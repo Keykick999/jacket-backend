@@ -63,7 +63,7 @@ public class ProjectService {
 
         // 결과가 null이면 해당 프로젝트가 없거나 본인 소유가 아님
         if (projectDto == null) {
-            throw new g(ErrorCode.PROJECT_NOT_FOUND);
+            throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
         }
 
         return projectDto;
