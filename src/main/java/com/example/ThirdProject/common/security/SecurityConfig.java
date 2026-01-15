@@ -52,11 +52,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth // TODO 나중에 필요한 경로만 설정하는 식으로 바꾸기
                         .requestMatchers(
-                                "/",
-                                "/users/login",
-                                "/users/social-complete", // Explicitly allow this
-                                "/api/users/social-complete", // Also allow with /api prefix just in case
-                                "/api/users/**", // Allow all /api/users for now to be safe
+                                "/api/users/**",
                                 "/api/email/**",
                                 "/email/**",
                                 "/login/oauth2/code/**",

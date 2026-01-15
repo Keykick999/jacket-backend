@@ -18,8 +18,7 @@ public class CustomCsrfFilter extends OncePerRequestFilter {
     private static final String CSRF_HEADER_NAME = "X-XSRF-TOKEN";
 
     private final List<String> URL_NOT_TO_FILTER = List.of(
-            "/api/users/login",
-            "/api/users/register",
+            "/api/users/**",
             "/oauth2/**",
             "/login/oauth2/**",
             "/api/email/**"
