@@ -60,10 +60,6 @@ public class ProjectService {
         Project project = projectRepository.findByIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
 
-        if (!project.getUser().getId().equals(userId)) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED);
-        }
-
         return mapToDto(project);
     }
 
