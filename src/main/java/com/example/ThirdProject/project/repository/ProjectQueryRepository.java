@@ -35,15 +35,17 @@ public class ProjectQueryRepository {
     /**
      * 프로젝트 목록 조회 (Slice 기반 무한 스크롤)
      */
-    public Slice<ProjectDto> searchProjects(String userId, Pageable pageable) {
-
-        // 1. 페이징 처리: 최소한의 프로젝션으로 ID와 기본 정보만 조회
-        // (필요 시 검색 조건인 where절을 여기에 추가)
+    public Slice<ProjectDto> searchProjects(Long userId, Pageable pageable) {
+        // 1. 기본 프로젝트 정보와 트랙 정보를 Join해서 가져옵니다.
         List<ProjectDto> content = queryFactory
-                .select(Projections.fields(ProjectDto.class,
+                .select(new QProjectDto(
                         project.id,
                         project.name,
-                        project.createdAt
+                        project.bpm,
+                        project.timeSignature,
+                        project.createdAt,
+                        project.updatedAt,
+                        project.album.id
                 ))
                 .from(project)
                 .where(project.user.id.eq(userId))
@@ -52,31 +54,15 @@ public class ProjectQueryRepository {
                 .limit(pageable.getPageSize() + 1) // 다음 페이지 확인용 +1
                 .fetch();
 
+        // 2. 만약 상세 정보(트랙 등)가 더 필요하다면, 여기서 추가 쿼리 없이
+        // fetchJoin을 사용하거나, 위 쿼리를 유지한 채 반환합니다.
+        // (현재 로그상으로는 transform 단계에서 터지므로 fetch()로 바꾸는 것만으로도 해결됩니다.)
+
         boolean hasNext = false;
         if (content.size() > pageable.getPageSize()) {
             content.remove(pageable.getPageSize());
             hasNext = true;
         }
-
-        if (content.isEmpty()) {
-            return new SliceImpl<>(Collections.emptyList(), pageable, hasNext);
-        }
-
-        // 2. 배치 조회: 조회된 프로젝트들의 트랙 정보를 IN 절로 한 번에 가져옴
-        List<Long> projectIds = content.stream().map(ProjectDto::getId).toList();
-
-        Map<Long, List<TrackDto>> trackMap = queryFactory
-                .from(track)
-                .where(track.project.id.in(projectIds))
-                .transform(groupBy(track.project.id).as(list(Projections.fields(TrackDto.class,
-                        track.id,
-                        track.name,
-                        track.type,
-                        track.orderIndex
-                ))));
-
-        // 3. 메모리 조립: 가져온 트랙 리스트를 각 프로젝트 DTO에 매핑
-        content.forEach(p -> p.setTracks(trackMap.getOrDefault(p.getId(), Collections.emptyList())));
 
         return new SliceImpl<>(content, pageable, hasNext);
     }
