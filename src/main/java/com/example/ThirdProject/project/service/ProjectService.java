@@ -57,7 +57,7 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public ProjectDto getProject(Long projectId, String userId) {
-        Project project = projectRepository.findById(projectId)
+        Project project = projectRepository.findByIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
 
         if (!project.getUser().getId().equals(userId)) {
