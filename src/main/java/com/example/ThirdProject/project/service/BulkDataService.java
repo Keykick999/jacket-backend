@@ -18,8 +18,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,54 +34,70 @@ public class BulkDataService {
     private final TrackRepository trackRepository;
     private final ClipRepository clipRepository;
     private final AmazonS3 s3Client;
-
-    // 비밀번호 암호화를 위한 인코더 주입
     private final PasswordEncoder passwordEncoder;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucketName;
 
+    /**
+     * 1. 테스트 유저만 대량 생성
+     */
     @Transactional
-    public void createBulkTestData() {
+    public void createBulkUsers(int count) {
+        log.info("👤 테스트 유저 {}명 생성 시작", count);
+        String rawPassword = "password123";
+        String encodedPassword = passwordEncoder.encode(rawPassword);
+
+        for (int i = 1; i <= count; i++) {
+            User user = User.builder()
+                    .loginId("test_id_" + i)
+                    .email("testuser" + i + "@example.com")
+                    .name("TestName" + i)
+                    .nickname("Tester-" + i)
+                    .password(encodedPassword)
+                    .isPrivate(false)
+                    .build();
+            userRepository.save(user);
+        }
+        log.info("✅ 유저 생성 완료");
+    }
+
+    /**
+     * 2. 생성된 테스트 유저들에게 프로젝트/트랙/클립 데이터 할당
+     */
+    @Transactional
+    public void createProjectDataForTestUsers() {
         int totalFiles = 400;
-        int userCount = 100;
         int tracksPerProject = 15;
         int clipsPerTrack = 5;
 
-        log.info("🚀 부하 테스트용 데이터 생성 시작 (암호화 적용됨)");
+        // "test_id_"로 시작하는 유저들만 가져옴
+        List<User> testUsers = userRepository.findAll().stream()
+                .filter(u -> u.getLoginId() != null && u.getLoginId().startsWith("test_id_"))
+                .toList();
 
-        for (int i = 1; i <= userCount; i++) {
-            // 1. 유저 생성 및 비밀번호 암호화
-            String rawPassword = "password123";
-            User user = User.builder()
-                    .loginId("test_id_" + i)           // 자체 로그인 ID
-                    .email("testuser" + i + "@example.com")
-                    .name("TestName" + i)              // nullable = false 대응
-                    .nickname("Tester-" + i)           // nullable = false 대응
-                    .password(passwordEncoder.encode(rawPassword))
-                    .isPrivate(false)
-                    .build();
-            user = userRepository.save(user);
+        log.info("🎹 {}명의 유저에게 프로젝트 데이터 생성 시작", testUsers.size());
 
-
-            // 2. 앨범 생성
+        int userIdx = 1;
+        for (User user : testUsers) {
+            // 앨범 생성
             Album album = new Album();
-            album.setTitle("Test Album " + i);
+            album.setTitle("Test Album " + userIdx);
             album.setUser(user);
-            album = albumRepository.save(album);
+            albumRepository.save(album);
 
-            // 3. 프로젝트 생성
+            // 프로젝트 생성
             Project project = Project.builder()
-                    .name("Load Test Project " + i)
+                    .name("Load Test Project " + userIdx)
                     .user(user)
                     .album(album)
                     .bpm(120)
                     .timeSignature("4/4")
                     .tracks(new ArrayList<>())
                     .build();
-            project = projectRepository.save(project);
+            projectRepository.save(project);
 
-            // 이후 Track 및 Clip 생성 로직은 동일합니다...
+            // 트랙 및 클립 생성
             for (int t = 1; t <= tracksPerProject; t++) {
                 Track track = new Track();
                 track.setName("Track " + t);
@@ -91,7 +109,7 @@ public class BulkDataService {
                 track = trackRepository.save(track);
 
                 for (int c = 1; c <= clipsPerTrack; c++) {
-                    int fileNum = ((i * t * c) % totalFiles) + 1;
+                    int fileNum = ((userIdx * t * c) % totalFiles) + 1;
                     String fileName = String.format("test_audio_%04d.wav", fileNum);
 
                     Date expiration = new Date();
@@ -103,17 +121,15 @@ public class BulkDataService {
                             .name("Clip-" + fileName)
                             .startTime((double) (c * 20))
                             .duration(300.0)
-                            .offset(0.0)
                             .sourceUrl(url)
                             .volume(1.0)
-                            .pan(0.0)
-                            .isMuted(false)
                             .build();
                     clipRepository.save(clip);
                 }
             }
-            if (i % 10 == 0) log.info("✅ 데이터 생성 진행 중: 유저 {}/{} 완료", i, userCount);
+            if (userIdx % 10 == 0) log.info("✅ 프로젝트 데이터 생성 중... ({}/{})", userIdx, testUsers.size());
+            userIdx++;
         }
-        log.info("🎉 암호화된 비밀번호를 포함한 모든 테스트 데이터 생성이 완료되었습니다.");
+        log.info("🎉 모든 프로젝트 데이터 생성 완료");
     }
 }

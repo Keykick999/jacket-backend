@@ -59,7 +59,8 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/error",
                                 "/favicon.ico",
-                                "/uploads/**"
+                                "/uploads/**",
+                                "/api/admin/test"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
