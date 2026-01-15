@@ -25,6 +25,7 @@ public class Album extends BaseTimeEntity {
     @Column(nullable = false)
     private String title;
 
+    @Column(length = 2048)
     private String coverImageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)

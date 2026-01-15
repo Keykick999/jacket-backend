@@ -4,9 +4,7 @@ import com.example.ThirdProject.album.entity.Album;
 import com.example.ThirdProject.common.entity.BaseTimeEntity;
 import com.example.ThirdProject.user.entity.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +14,8 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @Table(name = "projects")
+@AllArgsConstructor
+@Builder
 public class Project extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

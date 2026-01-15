@@ -28,12 +28,10 @@ public class Clip {
     private double duration;
     private double offset;
 
-    private String sourceUrl; // URL to the audio file
+    @Column(length = 2048)
+    private String sourceUrl;
 
     private double volume;
     private double pan;
     private boolean isMuted;
-
-    // For future use if we have different clip types (AUDIO, MIDI)
-    // private String type; 
 }
