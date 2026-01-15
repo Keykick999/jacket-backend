@@ -1,13 +1,8 @@
 package com.example.ThirdProject.project.repository;
 
 import com.example.ThirdProject.project.dto.*;
-import com.example.ThirdProject.project.entity.QClip;
-import com.example.ThirdProject.project.entity.QPlugin;
-import com.example.ThirdProject.project.entity.QProject;
-import com.example.ThirdProject.project.entity.QTrack;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -22,11 +17,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.example.ThirdProject.project.entity.QClip.clip;
-import static com.example.ThirdProject.project.entity.QPlugin.plugin;
 import static com.example.ThirdProject.project.entity.QProject.project;
 import static com.example.ThirdProject.project.entity.QTrack.track;
-import static com.querydsl.core.group.GroupBy.groupBy;
-import static com.querydsl.core.group.GroupBy.list;
 
 @Repository
 @RequiredArgsConstructor
