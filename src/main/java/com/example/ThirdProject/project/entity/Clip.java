@@ -37,5 +37,3 @@ public class Clip {
     private double pan;
     private boolean isMuted;
 }
-
-
