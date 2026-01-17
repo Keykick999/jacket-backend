@@ -13,9 +13,11 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "projects")
 @AllArgsConstructor
 @Builder
+@Table(name = "projects", indexes = {
+        @Index(name = "idx_project_user_created", columnList = "user_id, createdAt DESC")
+})
 public class Project extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -10,7 +10,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "clips")
+@Table(name = "clips", indexes = {
+        @Index(name = "idx_clip_track", columnList = "track_id")
+})
 public class Clip {
 
     @Id
@@ -35,3 +37,5 @@ public class Clip {
     private double pan;
     private boolean isMuted;
 }
+
+

@@ -14,8 +14,10 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "tracks")
 @org.hibernate.annotations.SQLRestriction("deleted = false")
+@Table(name = "tracks", indexes = {
+        @Index(name = "idx_track_project_deleted_order", columnList = "project_id, deleted, orderIndex")
+})
 public class Track {
 
     @Id
