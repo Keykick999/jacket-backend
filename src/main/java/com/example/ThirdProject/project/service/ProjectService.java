@@ -1,5 +1,8 @@
 package com.example.ThirdProject.project.service;
 
+import com.amazonaws.HttpMethod;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.example.ThirdProject.common.exception.CustomException;
 import com.example.ThirdProject.common.exception.ErrorCode;
 import com.example.ThirdProject.project.dto.ClipDto;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,6 +34,8 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectQueryRepository projectQueryRepository;
+    private final AmazonS3 amazonS3;
+    private final String bucketName = "daw-clips";
 
     public ProjectDto createProject(String userId, ProjectDto projectDto) {
         User user = userRepository.findById(userId)
@@ -65,6 +71,13 @@ public class ProjectService {
         if (projectDto == null) {
             throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
         }
+
+        // S3 SDK를 사용하여 URL 갱신
+        projectDto.getTracks().forEach(track -> {
+            track.getClips().forEach(clip -> {
+                clip.setSourceUrl(generatePresignedUrl(clip.getSourceUrl()));
+            });
+        });
 
         return projectDto;
     }
@@ -244,5 +257,34 @@ public class ProjectService {
                 .pan(clip.getPan())
                 .isMuted(clip.isMuted())
                 .build();
+    }
+
+    private String generatePresignedUrl(String originalUrl) {
+        if (originalUrl == null || originalUrl.isEmpty()) return originalUrl;
+
+        try {
+            // URL에서 객체 이름(Key)만 추출 (예: test.wav)
+            String objectKey = originalUrl.contains("/")
+                    ? originalUrl.substring(originalUrl.lastIndexOf("/") + 1).split("\\?")[0]
+                    : originalUrl;
+
+            // 만료 시간 설정 (현재 시간으로부터 2시간)
+            Date expiration = new Date();
+            long expTimeMillis = expiration.getTime();
+            expTimeMillis += 1000 * 60 * 60 * 2; // 2시간 추가
+            expiration.setTime(expTimeMillis);
+
+            // Presigned URL 생성 요청
+            GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                    new GeneratePresignedUrlRequest(bucketName, objectKey)
+                            .withMethod(HttpMethod.GET)
+                            .withExpiration(expiration);
+
+            return amazonS3.generatePresignedUrl(generatePresignedUrlRequest).toString();
+
+        } catch (Exception e) {
+            // 로깅 후 실패 시 원래 URL 반환
+            return originalUrl;
+        }
     }
 }
