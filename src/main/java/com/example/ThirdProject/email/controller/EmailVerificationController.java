@@ -28,7 +28,7 @@ public class EmailVerificationController {
 
     @PostMapping("/verify")
     public ResponseEntity<String> verify(@RequestBody @Valid VerifyCodeRequest req) {
-        service.verifyAndMarkAsVerified(req.email(), req.purpose(), req.code());
+        service.verify(req.email(), req.purpose(), req.code());
         return ResponseEntity.ok("인증 코드가 확인되었습니다.");
     }
 }

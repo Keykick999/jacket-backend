@@ -6,5 +6,5 @@ import lombok.ToString;
 
 public record SendCodeRequest(
         @Email @NotBlank String email,
-        @NotBlank String purpose // "signup" / "reset" 등
+        @NotBlank EmailPurpose purpose // "signup" / "reset" 등
 ) {}

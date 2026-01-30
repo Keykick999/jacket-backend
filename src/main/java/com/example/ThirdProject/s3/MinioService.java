@@ -51,4 +51,6 @@ public class MinioService {
         URL url = amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
         return url.toString();
     }
+
+
 }

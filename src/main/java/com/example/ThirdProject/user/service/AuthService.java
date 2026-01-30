@@ -3,6 +3,7 @@ package com.example.ThirdProject.user.service;
 import com.example.ThirdProject.common.exception.*;
 import com.example.ThirdProject.common.jwt.JwtService;
 import com.example.ThirdProject.common.jwt.TokenStore;
+import com.example.ThirdProject.email.dto.EmailPurpose;
 import com.example.ThirdProject.email.service.EmailVerificationService;
 import com.example.ThirdProject.email.util.EmailSender;
 import com.example.ThirdProject.user.entity.User;
@@ -53,7 +54,7 @@ public class AuthService {
     public String register(RegisterRequest req) {
         checkDuplicateUserId(req.userId());
         checkDuplicateEmail(req.email());
-        emailVerificationService.ensureVerified(req.email(), "signup");
+        emailVerificationService.ensureVerified(req.email(), EmailPurpose.SIGNUP);
 
         User u = createUser(req);
         userRepository.save(u);
@@ -282,7 +283,7 @@ public class AuthService {
 
     public void findId(FindIdRequest req) {
         // 1. 이메일 인증 여부 확인 (한 번만 사용하고 삭제)
-        emailVerificationService.ensureVerified(req.email(), "find-id");
+        emailVerificationService.ensureVerified(req.email(), EmailPurpose.FIND_ID);
 
         // 2. 해당 이메일로 가입된 유저 찾기
         User user = userRepository.findByEmail(req.email())
@@ -296,7 +297,7 @@ public class AuthService {
 
     public void resetPassword(ResetPasswordRequest req) {
         // 1. 이메일 인증 여부 확인
-        emailVerificationService.ensureVerified(req.email(), "reset-password");
+        emailVerificationService.ensureVerified(req.email(), EmailPurpose.RESET_PASSWORD);
 
         // 2. 유저 존재 확인
         User user = userRepository.findByEmail(req.email())

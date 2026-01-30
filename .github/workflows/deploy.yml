@@ -76,7 +76,3 @@ jobs:
 
             # 5. 사용하지 않는 이미지 정리 (용량 관리)
             sudo docker image prune -f
-            
-            
-            
-            

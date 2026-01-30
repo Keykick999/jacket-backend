@@ -48,10 +48,7 @@ public class ProjectQueryRepository {
                 .limit(pageable.getPageSize() + 1) // 다음 페이지 확인용 +1
                 .fetch();
 
-        // 2. 만약 상세 정보(트랙 등)가 더 필요하다면, 여기서 추가 쿼리 없이
-        // fetchJoin을 사용하거나, 위 쿼리를 유지한 채 반환합니다.
-        // (현재 로그상으로는 transform 단계에서 터지므로 fetch()로 바꾸는 것만으로도 해결됩니다.)
-
+        // 마지막 데이터인지 확인
         boolean hasNext = false;
         if (content.size() > pageable.getPageSize()) {
             content.remove(pageable.getPageSize());
