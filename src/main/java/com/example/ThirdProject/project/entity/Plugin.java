@@ -2,9 +2,7 @@ package com.example.ThirdProject.project.entity;
 
 import com.example.ThirdProject.project.enums.PluginType;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +11,8 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "plugins")
 public class Plugin {
 

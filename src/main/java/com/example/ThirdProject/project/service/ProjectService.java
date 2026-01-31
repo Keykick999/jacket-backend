@@ -1,30 +1,19 @@
 package com.example.ThirdProject.project.service;
 
-import com.amazonaws.HttpMethod;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.example.ThirdProject.common.exception.CustomException;
 import com.example.ThirdProject.common.exception.ErrorCode;
-import com.example.ThirdProject.project.dto.ClipDto;
-import com.example.ThirdProject.project.dto.PluginDto;
+import com.example.ThirdProject.common.util.S3Utils;
 import com.example.ThirdProject.project.dto.ProjectDto;
-import com.example.ThirdProject.project.dto.TrackDto;
 import com.example.ThirdProject.project.entity.*;
 import com.example.ThirdProject.project.repository.ProjectQueryRepository;
 import com.example.ThirdProject.project.repository.ProjectRepository;
 import com.example.ThirdProject.user.entity.User;
-import com.example.ThirdProject.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -32,259 +21,83 @@ import java.util.stream.Collectors;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final UserRepository userRepository;
     private final ProjectQueryRepository projectQueryRepository;
-    private final AmazonS3 amazonS3;
-    private final String bucketName = "daw-clips";
+    private final S3Utils s3Utils;
 
-    public ProjectDto createProject(String userId, ProjectDto projectDto) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    // 프로젝트 생성
+    public ProjectDto createProject(User user, ProjectDto projectDto) {
+        Project project = Project.builder()
+                .user(user)
+                .name(projectDto.getName())
+                .bpm(projectDto.getBpm())
+                .timeSignature(projectDto.getTimeSignature())
+                .build();
 
-        Project project = new Project();
-        project.setUser(user);
-        project.setName(projectDto.getName());
-        project.setBpm(projectDto.getBpm());
-        project.setTimeSignature(projectDto.getTimeSignature());
+        Optional.ofNullable(projectDto.getTracks()).orElse(List.of())
+                .forEach(trackDto -> project.addTrack(trackDto.toEntity(project)));
 
-        // Map Tracks and Plugins
-        if (projectDto.getTracks() != null) {
-            for (TrackDto trackDto : projectDto.getTracks()) {
-                project.addTrack(mapToEntity(trackDto, project));
-            }
-        }
-
-        Project savedProject = projectRepository.save(project);
-        return mapToDto(savedProject);
+        return ProjectDto.from(projectRepository.save(project));
     }
 
+    // 프로젝트 목록 조회
     @Transactional(readOnly = true)
     public Slice<ProjectDto> getProjectsByUserId(String userId, Pageable pageable) {
         return projectQueryRepository.searchProjects(userId, pageable);
     }
 
+    // 특정 프로젝트 조회
     @Transactional(readOnly = true)
     public ProjectDto getProject(Long projectId, String userId) {
-        ProjectDto projectDto = projectQueryRepository.getProjectDetail(projectId, userId);
-
-        // 결과가 null이면 해당 프로젝트가 없거나 본인 소유가 아님
-        if (projectDto == null) {
-            throw new CustomException(ErrorCode.PROJECT_NOT_FOUND);
-        }
+        ProjectDto projectDto = projectQueryRepository.getProjectDetail(projectId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
 
         // S3 SDK를 사용하여 URL 갱신
         projectDto.getTracks().forEach(track -> {
             track.getClips().forEach(clip -> {
-                clip.setSourceUrl(generatePresignedUrl(clip.getSourceUrl()));
+                clip.setSourceUrl(s3Utils.generatePresignedUrl(clip.getSourceUrl()));
             });
         });
 
         return projectDto;
     }
 
+    // 프로젝트 수정
     public ProjectDto updateProject(Long projectId, String userId, ProjectDto projectDto) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
+        Project project = findAndValidateProject(projectId, userId); // 공통 검증 로직 분리 가능
 
-        if (!project.getUser().getId().equals(userId)) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED);
-        }
+        // 엔티티 필드 수정
+        project.updateInfo(projectDto);
 
-        project.setName(projectDto.getName());
-        project.setBpm(projectDto.getBpm());
-        project.setTimeSignature(projectDto.getTimeSignature());
+        // 트랙 교체
+        List<Track> newTracks = Optional.ofNullable(projectDto.getTracks()).orElse(List.of())
+                .stream()
+                .map(trackDto -> trackDto.toEntity(project))
+                .toList();
+        project.replaceTracks(newTracks);
 
-        // Simple update strategy: Clear existing tracks and re-add
-        project.getTracks().clear();
-
-        if (projectDto.getTracks() != null) {
-            for (TrackDto trackDto : projectDto.getTracks()) {
-                project.addTrack(mapToEntity(trackDto, project));
-            }
-        }
-
-        return mapToDto(projectRepository.save(project));
+        return ProjectDto.from(projectRepository.save(project));
     }
 
+    // 프로젝트 삭제
     public void deleteProject(String userId, Long projectId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
-
-        if (!project.getUser().getId().equals(userId)) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED);
-        }
+        Project project = findAndValidateProject(projectId, userId); // 공통 검증 로직 분리 가능
 
         projectRepository.delete(project);
     }
 
-    public void deleteTrack(Long projectId, Long trackId, String userId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
-
-        if (!project.getUser().getId().equals(userId)) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED);
-        }
-
-        Track trackToRemove = project.getTracks().stream()
-                .filter(t -> t.getId().equals(trackId))
-                .findFirst()
-                .orElseThrow(() -> new CustomException(ErrorCode.TRACK_NOT_FOUND));
-
-        trackToRemove.setDeleted(true);
-    }
-
+    // 앨범에 수록된 프로젝트들 조회
     @Transactional(readOnly = true)
     public Slice<ProjectDto> getProjectsByAlbumId(Long albumId, Pageable pageable) {
         return projectQueryRepository.searchProjectsByAlbumId(albumId, pageable);
     }
 
-    private Track mapToEntity(TrackDto dto, Project project) {
-        Track track = new Track();
-        track.setProject(project);
-        track.setName(dto.getName());
-        track.setType(dto.getType());
-        track.setColor(dto.getColor());
-        track.setVolume(dto.getVolume());
-        track.setPan(dto.getPan());
-        track.setMuted(dto.getIsMuted());
-        track.setSolo(dto.getIsSolo());
-        track.setOrderIndex(dto.getOrderIndex());
+    private Project findAndValidateProject(Long projectId, String userId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
 
-        if (dto.getPlugins() != null) {
-            for (PluginDto pluginDto : dto.getPlugins()) {
-                Plugin plugin = new Plugin();
-                plugin.setName(pluginDto.getName());
-                plugin.setType(pluginDto.getType());
-                plugin.setOrderIndex(pluginDto.getOrderIndex());
-
-                if (pluginDto.getParameters() != null) {
-                    for (Map.Entry<String, String> entry : pluginDto.getParameters().entrySet()) {
-                        PluginParameter param = new PluginParameter();
-                        param.setName(entry.getKey());
-                        param.setValue(entry.getValue());
-                        plugin.addParameter(param);
-                    }
-                }
-
-                track.addPlugin(plugin);
-            }
+        if (!project.getUser().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
-
-        if (dto.getClips() != null) {
-            for (ClipDto clipDto : dto.getClips()) {
-                Clip clip = new Clip();
-                clip.setName(clipDto.getName());
-                clip.setStartTime(clipDto.getStartTime());
-                clip.setDuration(clipDto.getDuration());
-                clip.setOffset(clipDto.getOffset());
-                clip.setSourceUrl(clipDto.getSourceUrl());
-                clip.setVolume(clipDto.getVolume());
-                clip.setPan(clipDto.getPan());
-                clip.setMuted(clipDto.isMuted());
-
-                track.addClip(clip);
-            }
-        }
-
-        return track;
-    }
-
-    private ProjectDto mapToDto(Project project) {
-        // ProjectDto.builder()를 사용하여 객체를 생성합니다.
-        // 만약 DTO에 @Builder가 없다면 setter를 사용하되
-        // ProjectDto에 @NoArgsConstructor가 반드시 있어야 합니다.
-
-        List<TrackDto> trackDtos = project.getTracks().stream()
-                .filter(track -> !track.isDeleted()) // 삭제된 트랙 제외 로직 추가 권장
-                .sorted(Comparator.comparingInt(Track::getOrderIndex))
-                .map(this::mapTrackToDto)
-                .collect(Collectors.toList());
-
-        return ProjectDto.builder()
-                .id(project.getId())
-                .name(project.getName())
-                .bpm(project.getBpm())
-                .timeSignature(project.getTimeSignature())
-                .createdAt(project.getCreatedAt())
-                .updatedAt(project.getUpdatedAt())
-                .albumId(project.getAlbum() != null ? project.getAlbum().getId() : null)
-                .tracks(trackDtos)
-                .build();
-    }
-
-    // 트랙 변환 로직 분리 (가독성)
-    private TrackDto mapTrackToDto(Track track) {
-        return TrackDto.builder()
-                .id(track.getId())
-                .name(track.getName())
-                .type(track.getType())
-                .color(track.getColor())
-                .volume((float) track.getVolume())
-                .pan((float) track.getPan())
-                .isMuted(track.isMuted())
-                .isSolo(track.isSolo())
-                .orderIndex(track.getOrderIndex())
-                .plugins(track.getPlugins().stream()
-                        .sorted(Comparator.comparingInt(Plugin::getOrderIndex))
-                        .map(this::mapPluginToDto)
-                        .collect(Collectors.toList()))
-                .clips(track.getClips().stream()
-                        .map(this::mapClipToDto)
-                        .collect(Collectors.toList()))
-                .build();
-    }
-
-    private PluginDto mapPluginToDto(Plugin plugin) {
-        return PluginDto.builder()
-                .id(plugin.getId())
-                .name(plugin.getName())
-                .type(plugin.getType())
-                .orderIndex(plugin.getOrderIndex())
-                .parameters(plugin.getParameters().stream()
-                        .collect(Collectors.toMap(PluginParameter::getName, PluginParameter::getValue)))
-                .build();
-    }
-
-    private ClipDto mapClipToDto(Clip clip) {
-        return ClipDto.builder()
-                .id(clip.getId())
-                .name(clip.getName())
-                .startTime(clip.getStartTime())
-                .duration(clip.getDuration())
-                .offset(clip.getOffset())
-                .sourceUrl(clip.getSourceUrl())
-                .volume(clip.getVolume())
-                .pan(clip.getPan())
-                .isMuted(clip.isMuted())
-                .build();
-    }
-
-    private String generatePresignedUrl(String originalUrl) {
-        if (originalUrl == null || originalUrl.isEmpty()) return originalUrl;
-
-        try {
-            // URL에서 객체 이름(Key)만 추출 (예: test.wav)
-            String objectKey = originalUrl.contains("/")
-                    ? originalUrl.substring(originalUrl.lastIndexOf("/") + 1).split("\\?")[0]
-                    : originalUrl;
-
-            // 만료 시간 설정 (현재 시간으로부터 2시간)
-            Date expiration = new Date();
-            long expTimeMillis = expiration.getTime();
-            expTimeMillis += 1000 * 60 * 60 * 2; // 2시간 추가
-            expiration.setTime(expTimeMillis);
-
-            // Presigned URL 생성 요청
-            GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                    new GeneratePresignedUrlRequest(bucketName, objectKey)
-                            .withMethod(HttpMethod.GET)
-                            .withExpiration(expiration);
-
-            return amazonS3.generatePresignedUrl(generatePresignedUrlRequest).toString();
-
-        } catch (Exception e) {
-            // 로깅 후 실패 시 원래 URL 반환
-            return originalUrl;
-        }
+        return project;
     }
 }

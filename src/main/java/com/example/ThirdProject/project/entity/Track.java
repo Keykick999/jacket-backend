@@ -3,9 +3,7 @@ package com.example.ThirdProject.project.entity;
 import com.example.ThirdProject.project.enums.TrackType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +12,8 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @org.hibernate.annotations.SQLRestriction("deleted = false")
 @Table(name = "tracks", indexes = {
         @Index(name = "idx_track_project_deleted_order", columnList = "project_id, deleted, orderIndex")

@@ -2,6 +2,9 @@ package com.example.ThirdProject.project.entity;
 
 import com.example.ThirdProject.album.entity.Album;
 import com.example.ThirdProject.common.entity.BaseTimeEntity;
+import com.example.ThirdProject.common.exception.CustomException;
+import com.example.ThirdProject.common.exception.ErrorCode;
+import com.example.ThirdProject.project.dto.ProjectDto;
 import com.example.ThirdProject.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -44,5 +47,24 @@ public class Project extends BaseTimeEntity {
     public void addTrack(Track track) {
         tracks.add(track);
         track.setProject(this);
+    }
+
+    public void updateInfo(ProjectDto dto) {
+        this.name = dto.getName();
+        this.bpm = dto.getBpm();
+        this.timeSignature = dto.getTimeSignature();
+    }
+
+    public void replaceTracks(List<Track> newTracks) {
+        this.tracks.clear();
+        newTracks.forEach(this::addTrack);
+    }
+
+    public void softDeleteTrack(Long trackId) {
+        Track track = this.tracks.stream()
+                .filter(t -> t.getId().equals(trackId))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ErrorCode.TRACK_NOT_FOUND));
+        track.setDeleted(true);
     }
 }

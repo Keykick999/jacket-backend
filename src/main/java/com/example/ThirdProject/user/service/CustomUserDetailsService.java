@@ -1,5 +1,8 @@
 package com.example.ThirdProject.user.service;
 
+import com.example.ThirdProject.common.entity.CustomUserDetails;
+import com.example.ThirdProject.common.exception.CustomException;
+import com.example.ThirdProject.common.exception.ErrorCode;
 import com.example.ThirdProject.user.entity.User;
 import com.example.ThirdProject.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +19,8 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // 회원 정보 조회
-        User user = userRepository.findById(username).orElseThrow(() -> new UsernameNotFoundException(username));
+        User user = userRepository.findById(username).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // UserDetails 반환
-        return org.springframework.security.core.userdetails.User
-                .builder()
-                .username(username)
-                .password(user.getPassword())
-                .build();
+        return new CustomUserDetails(user);
     }
 }

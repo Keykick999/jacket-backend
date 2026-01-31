@@ -9,10 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.stereotype.Repository;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.example.ThirdProject.project.entity.QClip.clip;
@@ -61,7 +59,7 @@ public class ProjectQueryRepository {
     /**
      * 단일 프로젝트 상세 조회 (모든 계층 데이터 포함)
      */
-    public ProjectDto getProjectDetail(Long projectId, String userId) {
+    public Optional<ProjectDto> getProjectDetail(Long projectId, String userId) {
         // 1. 프로젝트 기본 정보 조회 (QProjectDto 인자 7개 생성자 사용)
         ProjectDto projectDto = queryFactory
                 .select(new QProjectDto(
@@ -79,7 +77,7 @@ public class ProjectQueryRepository {
                 .fetchOne();
 
         // 프로젝트가 없거나 권한이 없으면 즉시 종료
-        if (projectDto == null) return null;
+        if (projectDto == null) return Optional.empty();
 
         // 2. 해당 프로젝트에 속한 트랙 목록 조회 (QTrackDto 인자 9개 생성자 사용)
         List<TrackDto> tracks = queryFactory
@@ -141,7 +139,7 @@ public class ProjectQueryRepository {
             );
         }
 
-        return projectDto;
+        return Optional.of(projectDto);
     }
 
 

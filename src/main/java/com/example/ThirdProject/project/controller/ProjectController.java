@@ -1,5 +1,6 @@
 package com.example.ThirdProject.project.controller;
 
+import com.example.ThirdProject.common.entity.CustomUserDetails;
 import com.example.ThirdProject.project.dto.ProjectDto;
 import com.example.ThirdProject.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +20,8 @@ public class ProjectController {
     private final ProjectService projectService;
 
     @PostMapping
-    public ResponseEntity<ProjectDto> createProject(@AuthenticationPrincipal UserDetails userDetails, @RequestBody ProjectDto projectDto) {
-        String userId = userDetails.getUsername();
-        return ResponseEntity.ok(projectService.createProject(userId, projectDto));
+    public ResponseEntity<ProjectDto> createProject(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody ProjectDto projectDto) {
+        return ResponseEntity.ok(projectService.createProject(userDetails.user(), projectDto));
     }
 
     @GetMapping
@@ -49,13 +49,6 @@ public class ProjectController {
     public ResponseEntity<Void> deleteProject(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long id) {
         String userId = userDetails.getUsername();
         projectService.deleteProject(userId, id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/{projectId}/tracks/{trackId}")
-    public ResponseEntity<Void> deleteTrack(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long projectId, @PathVariable Long trackId) {
-        String userId = userDetails.getUsername();
-        projectService.deleteTrack(projectId, trackId, userId);
         return ResponseEntity.noContent().build();
     }
 }
