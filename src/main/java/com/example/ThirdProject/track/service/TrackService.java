@@ -15,7 +15,7 @@ public class TrackService {
 
     // 트랙 삭제
     public void deleteTrack(Long projectId, Long trackId, String userId) {
-        Project project = findAndValidateProject(projectId, userId); // 공통 검증 로직 분리 가능
+        Project project = findAndValidateProject(projectId, userId);
         project.softDeleteTrack(trackId);
     }
 

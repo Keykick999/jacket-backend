@@ -50,9 +50,11 @@ public class Track {
     @Column(nullable = false)
     private boolean deleted = false;
 
+    @Builder.Default
     @OneToMany(mappedBy = "track", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Plugin> plugins = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "track", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Clip> clips = new ArrayList<>();
 

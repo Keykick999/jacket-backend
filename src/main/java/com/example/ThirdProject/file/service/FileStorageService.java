@@ -78,9 +78,4 @@ public class FileStorageService {
 
         return amazonS3.generatePresignedUrl(generatePresignedUrlRequest).toString();
     }
-
-    @Transactional
-    public void deleteFile(String fileName) {
-
-    }
 }

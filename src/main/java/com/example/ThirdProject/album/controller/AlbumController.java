@@ -3,6 +3,7 @@ package com.example.ThirdProject.album.controller;
 import com.example.ThirdProject.album.dto.AlbumCreateRequest;
 import com.example.ThirdProject.album.dto.AlbumResponse;
 import com.example.ThirdProject.album.service.AlbumService;
+import com.example.ThirdProject.common.entity.CustomUserDetails;
 import com.example.ThirdProject.project.dto.ProjectDto;
 import com.example.ThirdProject.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +25,8 @@ public class AlbumController {
     private final ProjectService projectService;
 
     @PostMapping
-    public ResponseEntity<AlbumResponse> createAlbum(@AuthenticationPrincipal UserDetails userDetails, @RequestBody AlbumCreateRequest request) {
-        String userId = userDetails.getUsername();
-        return ResponseEntity.ok(albumService.createAlbum(userId, request));
+    public ResponseEntity<AlbumResponse> createAlbum(@AuthenticationPrincipal CustomUserDetails userDetails, @RequestBody AlbumCreateRequest request) {
+        return ResponseEntity.ok(albumService.createAlbum(userDetails.user(), request));
     }
 
     @GetMapping

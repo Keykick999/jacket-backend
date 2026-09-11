@@ -60,7 +60,14 @@ public class SecurityConfig {
                                 "/error",
                                 "/favicon.ico",
                                 "/uploads/**",
-                                "/api/admin/test/**"
+                                "/api/admin/test/**",
+
+                                // Actuator
+                                "/actuator/health",
+                                "/actuator/info",
+                                "/actuator/metrics",
+                                "/actuator/prometheus",
+                                "/actuator/threaddump"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

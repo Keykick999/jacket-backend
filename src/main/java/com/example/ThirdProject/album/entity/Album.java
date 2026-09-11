@@ -4,10 +4,10 @@ import com.example.ThirdProject.common.entity.BaseTimeEntity;
 import com.example.ThirdProject.project.entity.Project;
 import com.example.ThirdProject.user.entity.User;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +15,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "albums")
 public class Album extends BaseTimeEntity {
 

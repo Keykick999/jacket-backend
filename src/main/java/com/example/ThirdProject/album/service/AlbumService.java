@@ -26,10 +26,7 @@ public class AlbumService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
 
-    public AlbumResponse createAlbum(String userId, AlbumCreateRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
+    public AlbumResponse createAlbum(User user, AlbumCreateRequest request) {
         Album album = new Album();
         album.setTitle(request.getTitle());
         album.setCoverImageUrl(request.getCoverImageUrl());
@@ -69,6 +66,5 @@ public class AlbumService {
         }
 
         project.setAlbum(album);
-        // projectRepository.save(project); // Transactional handles this
     }
 }

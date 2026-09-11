@@ -22,6 +22,7 @@ import java.util.Map;
 public class AiImageService {
 
     private final FileStorageService fileStorageService;
+    private final RestTemplate restTemplate;
 
     @Value("${huggingface.api.url}")
     private String apiUrl;
@@ -30,8 +31,6 @@ public class AiImageService {
     private String apiToken;
 
     public AiImageResponse generateImage(AiImageRequest request) {
-        RestTemplate restTemplate = new RestTemplate();
-
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(apiToken);
         headers.setContentType(MediaType.APPLICATION_JSON);

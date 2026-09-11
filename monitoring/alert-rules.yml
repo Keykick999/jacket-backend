@@ -1,0 +1,12 @@
+groups:
+  - name: jacket-alerts
+    rules:
+      - alert: JacketHighCPU
+        expr: process_cpu_usage >= 0
+        for: 10s
+        labels:
+          severity: warning
+          service: jacket
+        annotations:
+          summary: "Jacket CPU usage is high"
+          description: "CPU usage has been above 80% for 1 minute."

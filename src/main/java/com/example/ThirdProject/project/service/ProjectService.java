@@ -19,7 +19,6 @@ import java.util.*;
 @RequiredArgsConstructor
 @Transactional
 public class ProjectService {
-
     private final ProjectRepository projectRepository;
     private final ProjectQueryRepository projectQueryRepository;
     private final S3Utils s3Utils;

@@ -1,0 +1,7 @@
+route:
+  receiver: incident-analyzer
+
+receivers:
+  - name: incident-analyzer
+    webhook_configs:
+      - url: 'http://host.docker.internal:8081/api/incidents/alerts'

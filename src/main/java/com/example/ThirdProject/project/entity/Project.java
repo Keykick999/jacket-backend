@@ -41,6 +41,7 @@ public class Project extends BaseTimeEntity {
 
     private String timeSignature = "4/4";
 
+    @Builder.Default
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Track> tracks = new ArrayList<>();
 
