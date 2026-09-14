@@ -24,7 +24,7 @@ public class ThreadDumpService {
         this.threadDumpAnalyzer = threadDumpAnalyzer;
     }
 
-    public String analyzeThreadDump() {
+    public ThreadDumpAnalysisResult analyzeThreadDump() {
         String threadDump = serverDataCollector.collectThreadDump();
 
         List<ThreadInfo> threads = threadDumpParser.parse(threadDump);

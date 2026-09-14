@@ -2,7 +2,6 @@ package org.example.incidentanalyzer.diagnostic;
 
 import org.springframework.stereotype.Component;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -16,7 +15,12 @@ public class ThreadDumpAnalyzer {
         this.runnableThreadAnalyzer = runnableThreadAnalyzer;
     }
 
-    public String analyze(List<ThreadInfo> threads) {
+    /**
+     * Thread Dump에서 Thread 상태와
+     * RUNNABLE 메서드 정보를 분석한다.
+     */
+    public ThreadDumpAnalysisResult analyze(List<ThreadInfo> threads) {
+
         Map<Thread.State, Long> stateCounts = threads.stream()
                 .collect(Collectors.groupingBy(
                         ThreadInfo::state,
@@ -26,37 +30,21 @@ public class ThreadDumpAnalyzer {
         List<RunnableMethodCount> runnableMethods =
                 runnableThreadAnalyzer.analyze(threads);
 
-        String runnableMethodAnalysis = runnableMethods.stream()
-                .sorted(Comparator.comparingLong(
-                        RunnableMethodCount::count
-                ).reversed())
-                .map(method ->
-                        "- %s : %d threads"
-                                .formatted(
-                                        method.methodName(),
-                                        method.count()
-                                )
-                )
-                .collect(Collectors.joining("\n"));
-
-        return """
-            Thread Dump Analysis
-
-            Total Threads: %d
-            RUNNABLE: %d
-            BLOCKED: %d
-            WAITING: %d
-            TIMED_WAITING: %d
-
-            RUNNABLE 메서드
-            %s
-            """.formatted(
+        return new ThreadDumpAnalysisResult(
                 threads.size(),
-                stateCounts.getOrDefault(Thread.State.RUNNABLE, 0L),
-                stateCounts.getOrDefault(Thread.State.BLOCKED, 0L),
-                stateCounts.getOrDefault(Thread.State.WAITING, 0L),
-                stateCounts.getOrDefault(Thread.State.TIMED_WAITING, 0L),
-                runnableMethodAnalysis
+                stateCounts.getOrDefault(
+                        Thread.State.RUNNABLE, 0L
+                ),
+                stateCounts.getOrDefault(
+                        Thread.State.BLOCKED, 0L
+                ),
+                stateCounts.getOrDefault(
+                        Thread.State.WAITING, 0L
+                ),
+                stateCounts.getOrDefault(
+                        Thread.State.TIMED_WAITING, 0L
+                ),
+                runnableMethods
         );
     }
 }

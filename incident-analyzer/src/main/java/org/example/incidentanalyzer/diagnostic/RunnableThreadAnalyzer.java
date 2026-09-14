@@ -2,6 +2,7 @@ package org.example.incidentanalyzer.diagnostic;
 
 import org.springframework.stereotype.Component;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -17,7 +18,7 @@ public class RunnableThreadAnalyzer {
 
     private static final Pattern STACK_FRAME_PATTERN =
             Pattern.compile(
-                    "^at\\s+([\\w.$]+)\\.([\\w$<>]+)\\(([^)]*)\\)"
+                    "^at\\s+(?:app//)?([\\w.$]+)\\.([\\w$<>]+)\\(([^)]*)\\)"
             );
 
     /**
@@ -32,6 +33,9 @@ public class RunnableThreadAnalyzer {
                         entry.getKey(),
                         entry.getValue()
                 ))
+                .sorted(Comparator.comparingLong(
+                        RunnableMethodCount::count
+                ).reversed())
                 .toList();
     }
 

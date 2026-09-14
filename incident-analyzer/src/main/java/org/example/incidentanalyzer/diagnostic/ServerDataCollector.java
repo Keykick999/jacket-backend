@@ -21,6 +21,11 @@ public class ServerDataCollector {
     public String collectThreadDump() {
         String url = "http://localhost:8080/actuator/threaddump";
 
-        return restTemplate.getForObject(url, String.class);
+        String threadDump = restTemplate.getForObject(url, String.class);
+
+        System.out.println("===== THREAD DUMP RESPONSE =====");
+        System.out.println(threadDump);
+
+        return threadDump;
     }
 }

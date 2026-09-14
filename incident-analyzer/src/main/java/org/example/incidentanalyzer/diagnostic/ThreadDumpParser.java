@@ -23,7 +23,7 @@ public class ThreadDumpParser {
         String[] lines = threadDump.split("\\R");
 
         String threadName = null;
-        String state = null;
+        Thread.State state = null;
         List<String> stackTrace = new ArrayList<>();
 
         for (String line : lines) {
@@ -52,7 +52,7 @@ public class ThreadDumpParser {
             Matcher stateMatcher = STATE_PATTERN.matcher(line);
 
             if (stateMatcher.find()) {
-                state = stateMatcher.group(1);
+                state = Thread.State.valueOf(stateMatcher.group(1));
                 continue;
             }
 
