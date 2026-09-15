@@ -15,6 +15,40 @@ import java.util.stream.Collectors;
 @Component
 public class JfrCpuAnalyzer {
 
+    private static class MethodCpuData {
+
+        private float totalAverageCpuLoad;
+        private float maxCpuLoad;
+        private long sampleCount;
+
+        public void add(
+                float averageCpuLoad,
+                float maxCpuLoad,
+                long sampleCount
+        ) {
+            this.totalAverageCpuLoad += averageCpuLoad;
+            this.maxCpuLoad =
+                    Math.max(this.maxCpuLoad, maxCpuLoad);
+            this.sampleCount += sampleCount;
+        }
+
+        public float averageCpuLoad() {
+            if (sampleCount == 0) {
+                return 0.0f;
+            }
+
+            return totalAverageCpuLoad / sampleCount;
+        }
+
+        public float maxCpuLoad() {
+            return maxCpuLoad;
+        }
+
+        public long sampleCount() {
+            return sampleCount;
+        }
+    }
+
     private static final String PROJECT_PACKAGE =
             "com.example.ThirdProject";
 
@@ -30,10 +64,43 @@ public class JfrCpuAnalyzer {
         List<RecordedEvent> events =
                 RecordingFile.readAllEvents(Path.of(filePath));
 
+        long executionSampleEventCount =
+                events.stream()
+                        .filter(this::isExecutionSample)
+                        .count();
+
+        System.out.println(
+                "ExecutionSample EVENT count = "
+                        + executionSampleEventCount
+        );
+
+        events.stream()
+                .filter(this::isExecutionSample)
+                .limit(5)
+                .forEach(event -> {
+
+                    System.out.println("===== RAW EXECUTION SAMPLE =====");
+                    System.out.println("event type = "
+                            + event.getEventType().getName());
+
+                    System.out.println("thread = "
+                            + event.getThread());
+
+                    System.out.println("sampledThread = "
+                            + event.getThread("sampledThread"));
+
+                    System.out.println("stackTrace = "
+                            + event.getStackTrace());
+
+                    System.out.println("timestamp = "
+                            + event.getStartTime());
+                });
+
         List<ThreadCpuLoad> threadCpuLoads =
                 events.stream()
                         .filter(this::isThreadCpuLoad)
                         .map(this::toThreadCpuLoad)
+                        .filter(Objects::nonNull)
                         .toList();
 
         List<ExecutionSampleInfo> executionSamples =
@@ -46,21 +113,160 @@ public class JfrCpuAnalyzer {
         Map<String, List<ThreadCpuLoad>> cpuLoadsByThread =
                 groupCpuLoadsByThread(threadCpuLoads);
 
-        return analyzeMethods(
-                cpuLoadsByThread,
-                executionSamples
+        Map<String, List<ExecutionSampleInfo>> samplesByThread =
+                groupExecutionSamplesByThread(executionSamples);
+
+        Map<String, List<Float>> cpuLoadsByMethod =
+                new HashMap<>();
+
+        for (Map.Entry<String, List<ExecutionSampleInfo>> entry
+                : samplesByThread.entrySet()) {
+            String threadName = entry.getKey();
+
+            List<ExecutionSampleInfo> samples =
+                    entry.getValue();
+
+            List<ThreadCpuLoad> cpuLoads =
+                    cpuLoadsByThread.get(threadName);
+
+            if (cpuLoads == null || cpuLoads.isEmpty()) {
+                continue;
+            }
+
+            for (ExecutionSampleInfo sample : samples) {
+
+                String methodName =
+                        extractApplicationMethod(
+                                sample.stackTrace()
+                        );
+
+                if (methodName == null) {
+                    continue;
+                }
+
+                ThreadCpuLoad cpuLoad =
+                        findNearestCpuLoad(
+                                sample,
+                                cpuLoads
+                        );
+
+                System.out.println(
+                        "===== SAMPLE MATCH ====="
+                );
+                System.out.println(
+                        "thread = " + sample.threadName()
+                );
+                System.out.println(
+                        "sample timestamp = " + sample.timestamp()
+                );
+                System.out.println(
+                        "method = " + methodName
+                );
+                System.out.println(
+                        "nearest cpuLoad = " + cpuLoad
+                );
+
+                if (cpuLoad == null) {
+                    continue;
+                }
+
+                cpuLoadsByMethod
+                        .computeIfAbsent(
+                                methodName,
+                                key -> new ArrayList<>()
+                        )
+                        .add(cpuLoad.totalLoad());
+            }
+        }
+
+        System.out.println("===== THREAD CPU LOADS =====");
+        System.out.println("size = " + threadCpuLoads.size());
+
+        threadCpuLoads.stream()
+                .limit(10)
+                .forEach(System.out::println);
+
+        System.out.println("===== THREAD CPU LOADS =====");
+        System.out.println("size = " + threadCpuLoads.size());
+
+        threadCpuLoads.stream()
+                .limit(10)
+                .forEach(System.out::println);
+
+
+        System.out.println("===== EXECUTION SAMPLES =====");
+        System.out.println("size = " + executionSamples.size());
+
+        executionSamples.stream()
+                .limit(10)
+                .forEach(System.out::println);
+
+
+        System.out.println("===== CPU LOADS BY METHOD =====");
+        System.out.println("size = " + cpuLoadsByMethod.size());
+
+        cpuLoadsByMethod.forEach((method, cpuLoads) ->
+                System.out.println(
+                        "method=" + method +
+                                ", cpuLoads=" + cpuLoads
+                )
         );
+
+        return cpuLoadsByMethod.entrySet()
+                .stream()
+                .map(entry -> {
+
+                    String methodName =
+                            entry.getKey();
+
+                    List<Float> cpuLoads =
+                            entry.getValue();
+
+                    float averageCpuLoad =
+                            (float) cpuLoads.stream()
+                                    .mapToDouble(Float::doubleValue)
+                                    .average()
+                                    .orElse(0.0);
+
+                    float maxCpuLoad =
+                            cpuLoads.stream()
+                                    .max(Float::compare)
+                                    .orElse(0.0f);
+
+                    long sampleCount =
+                            cpuLoads.size();
+
+                    return new MethodCpuAnalysis(
+                            methodName,
+                            averageCpuLoad,
+                            maxCpuLoad,
+                            sampleCount
+                    );
+                })
+                .sorted(
+                        Comparator.comparing(
+                                MethodCpuAnalysis::impactScore
+                        ).reversed()
+                )
+                .toList();
     }
 
     private ExecutionSampleInfo toExecutionSampleInfo(
             RecordedEvent event
     ) {
-
-        if (event.getThread() == null || event.getStackTrace() == null) {
+        if (event.getStackTrace() == null) {
             return null;
         }
 
-        String threadName = event.getThread().getJavaName();
+        var sampledThread =
+                event.getThread("sampledThread");
+
+        if (sampledThread == null) {
+            return null;
+        }
+
+        String threadName =
+                sampledThread.getJavaName();
 
         String stackTrace =
                 event.getStackTrace()
@@ -95,6 +301,10 @@ public class JfrCpuAnalyzer {
     private ThreadCpuLoad toThreadCpuLoad(
             RecordedEvent event
     ) {
+        if (event.getThread() == null) {
+            return null;
+        }
+
         String threadName =
                 event.getThread().getJavaName();
 
@@ -177,6 +387,11 @@ public class JfrCpuAnalyzer {
                             cpuLoads.size()
                     );
                 })
+                .sorted(
+                        Comparator.comparing(
+                                MethodCpuAnalysis::impactScore
+                        ).reversed()
+                )
                 .toList();
     }
 
@@ -185,27 +400,43 @@ public class JfrCpuAnalyzer {
     ) {
         for (String stackFrame : stackTrace.split("\n")) {
 
-            if (!stackFrame.contains(PROJECT_PACKAGE)) {
+            if (!stackFrame.contains("method = " + PROJECT_PACKAGE)) {
                 continue;
             }
 
-            Matcher matcher =
-                    STACK_FRAME_PATTERN.matcher(stackFrame);
+            String method = stackFrame
+                    .substring(
+                            stackFrame.indexOf("method = ")
+                                    + "method = ".length()
+                    )
+                    .trim();
 
-            if (!matcher.matches()) {
+            int openParenthesis = method.indexOf('(');
+
+            if (openParenthesis == -1) {
                 continue;
             }
 
-            String classPath = matcher.group(1);
-            String methodName = matcher.group(2);
+            String fullMethodName =
+                    method.substring(0, openParenthesis);
 
-            int lastDot = classPath.lastIndexOf('.');
+            int lastDot =
+                    fullMethodName.lastIndexOf('.');
 
             if (lastDot == -1) {
-                return null;
+                continue;
             }
 
-            String className = classPath.substring(lastDot + 1);
+            String classPath =
+                    fullMethodName.substring(0, lastDot);
+
+            String methodName =
+                    fullMethodName.substring(lastDot + 1);
+
+            String className =
+                    classPath.substring(
+                            classPath.lastIndexOf('.') + 1
+                    );
 
             return className + "." + methodName + "()";
         }
@@ -252,5 +483,14 @@ public class JfrCpuAnalyzer {
         }
 
         return findNearestCpuLoad(sample, cpuLoads);
+    }
+
+    private Map<String, List<ExecutionSampleInfo>> groupExecutionSamplesByThread(
+            List<ExecutionSampleInfo> samples
+    ) {
+        return samples.stream()
+                .collect(Collectors.groupingBy(
+                        ExecutionSampleInfo::threadName
+                ));
     }
 }

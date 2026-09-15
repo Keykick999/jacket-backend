@@ -8,4 +8,8 @@ public record MethodCpuAnalysis(
         float averageCpuLoad,
         float maxCpuLoad,
         long sampleCount
-) {}
+) {
+    public float impactScore() {
+        return averageCpuLoad * sampleCount;
+    }
+}

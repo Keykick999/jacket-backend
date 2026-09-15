@@ -67,7 +67,8 @@ public class SecurityConfig {
                                 "/actuator/info",
                                 "/actuator/metrics",
                                 "/actuator/prometheus",
-                                "/actuator/threaddump"
+                                "/actuator/threaddump",
+                                "/test/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
