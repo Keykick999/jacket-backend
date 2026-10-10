@@ -3,10 +3,14 @@ package org.example.incidentanalyzer.rule;
 import org.example.incidentanalyzer.alert.AlertRequest;
 import org.example.incidentanalyzer.alert.AlertType;
 import org.example.incidentanalyzer.analysis.AlertAnalysisResult;
-import org.example.incidentanalyzer.diagnostic.*;
+import org.example.incidentanalyzer.diagnostic.JfrCpuAnalyzer;
+import org.example.incidentanalyzer.diagnostic.JfrFileResolver;
+import org.example.incidentanalyzer.diagnostic.MethodCpuAnalysis;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,9 +20,14 @@ public class HighCpuAnalyzer implements AlertAnalyzer {
     private static final int MAX_CANDIDATES = 5;
 
     private final JfrCpuAnalyzer jfrCpuAnalyzer;
+    private final JfrFileResolver jfrFileResolver;
 
-    public HighCpuAnalyzer(JfrCpuAnalyzer jfrCpuAnalyzer) {
+    public HighCpuAnalyzer(
+            JfrCpuAnalyzer jfrCpuAnalyzer,
+            JfrFileResolver jfrFileResolver
+    ) {
         this.jfrCpuAnalyzer = jfrCpuAnalyzer;
+        this.jfrFileResolver = jfrFileResolver;
     }
 
     @Override
@@ -28,12 +37,17 @@ public class HighCpuAnalyzer implements AlertAnalyzer {
 
     @Override
     public AlertAnalysisResult analyze(AlertRequest.Alert alert) {
+        Path jfrFilePath = jfrFileResolver.resolve();
 
-        String jfrFilePath = "C:/Users/brian/ThirdProject/jacket-cpu-test.jfr";;
+        if (!Files.exists(jfrFilePath)) {
+            throw new IllegalStateException(
+                    "JFR 파일을 찾을 수 없습니다: " + jfrFilePath
+            );
+        }
 
         try {
             List<MethodCpuAnalysis> methods =
-                    jfrCpuAnalyzer.analyze(jfrFilePath);
+                    jfrCpuAnalyzer.analyze(jfrFilePath.toString());
 
             String methodAnalysis =
                     methods.stream()
@@ -57,9 +71,9 @@ public class HighCpuAnalyzer implements AlertAnalyzer {
                     """.formatted(methodAnalysis);
 
             return new AlertAnalysisResult(
-                    alert.labels().get("alertname"),
-                    alert.labels().get("severity"),
-                    alert.labels().get("instance"),
+                    alert.label("alertname"),
+                    alert.label("severity"),
+                    alert.label("instance"),
                     analysis
             );
         } catch (IOException e) {
@@ -69,52 +83,4 @@ public class HighCpuAnalyzer implements AlertAnalyzer {
             );
         }
     }
-
-//    @Override
-//    public AlertAnalysisResult analyze(AlertRequest.Alert alert) {
-//        ThreadDumpAnalysisResult threadAnalysis =
-//                threadDumpService.analyzeThreadDump();
-//
-//        List<RunnableMethodCount> candidates =
-//                threadAnalysis.runnableMethods().stream()
-//                        .limit(MAX_CANDIDATES)
-//                        .toList();
-//
-//        String candidateAnalysis =
-//                candidates.stream()
-//                        .map(candidate ->
-//                                "- %s (%d개 RUNNABLE Thread)"
-//                                        .formatted(
-//                                                candidate.methodName(),
-//                                                candidate.count()
-//                                        )
-//                        )
-//                        .collect(Collectors.joining("\n"));
-//
-//        String analysis = """
-//                CPU 사용량 증가가 감지되었습니다.
-//
-//                Thread Dump 분석:
-//                - RUNNABLE: %d
-//                - BLOCKED: %d
-//                - WAITING: %d
-//                - TIMED_WAITING: %d
-//
-//                CPU 원인 후보:
-//                %s
-//                """.formatted(
-//                threadAnalysis.runnableThreads(),
-//                threadAnalysis.blockedThreads(),
-//                threadAnalysis.waitingThreads(),
-//                threadAnalysis.timedWaitingThreads(),
-//                candidateAnalysis
-//        );
-//
-//        return new AlertAnalysisResult(
-//                alert.labels().get("alertname"),
-//                alert.labels().get("severity"),
-//                alert.labels().get("instance"),
-//                analysis
-//        );
-//    }
 }

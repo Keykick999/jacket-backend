@@ -19,11 +19,25 @@ repositories {
 }
 
 dependencies {
+	implementation platform('org.springframework.ai:spring-ai-bom:2.0.1')
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'gemini'
+	}
+}
+
+tasks.register('geminiTest', Test) {
+	description = 'Runs tests that call the real Gemini API (requires GEMINI_API_KEY).'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeTags 'gemini'
+	}
 }

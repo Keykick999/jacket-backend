@@ -1,0 +1,2 @@
+org.springframework.context.ApplicationListener=\
+org.example.incidentanalyzer.config.GeminiApiKeyEnvironmentValidator

@@ -1,7 +1,5 @@
 package org.example.incidentanalyzer.diagnostic;
 
-import org.example.incidentanalyzer.diagnostic.RunnableMethodCount;
-
 import java.util.List;
 
 /**
@@ -13,6 +11,27 @@ public record ThreadDumpAnalysisResult(
         long blockedThreads,
         long waitingThreads,
         long timedWaitingThreads,
-        List<RunnableMethodCount> runnableMethods
+        List<RunnableMethodCount> runnableMethods,
+        List<LockWait> lockWaits,
+        List<ThreadStackSummary> topStacks
 ) {
+    public ThreadDumpAnalysisResult(
+            int totalThreads,
+            long runnableThreads,
+            long blockedThreads,
+            long waitingThreads,
+            long timedWaitingThreads,
+            List<RunnableMethodCount> runnableMethods
+    ) {
+        this(
+                totalThreads,
+                runnableThreads,
+                blockedThreads,
+                waitingThreads,
+                timedWaitingThreads,
+                runnableMethods,
+                List.of(),
+                List.of()
+        );
+    }
 }

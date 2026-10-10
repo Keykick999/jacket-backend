@@ -25,10 +25,12 @@ public class ThreadDumpService {
     }
 
     public ThreadDumpAnalysisResult analyzeThreadDump() {
+        return analyzeThreadDump(10, 15);
+    }
+
+    public ThreadDumpAnalysisResult analyzeThreadDump(int topN, int maxStackDepth) {
         String threadDump = serverDataCollector.collectThreadDump();
-
         List<ThreadInfo> threads = threadDumpParser.parse(threadDump);
-
-        return threadDumpAnalyzer.analyze(threads);
+        return threadDumpAnalyzer.analyze(threads, topN, maxStackDepth);
     }
 }
